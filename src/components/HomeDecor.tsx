@@ -119,14 +119,25 @@ function Node({ n }: { n: DecorNode }) {
 export default function HomeDecor({
   nodes,
   className = '',
+  variant = 'props',
 }: {
   nodes: DecorNode[]
   className?: string
+  /**
+   * Figma has no spec below the 1440 canvas, so narrower viewports get a policy instead:
+   * `props` (food photography, cutlery — things with a real size) hide below `lg`, where
+   * a 1440-scale prop would dwarf the reflowed content; `wash` (the blurred tint blobs,
+   * already thousands of px across) stay at every width, since a centred slice of a soft
+   * gradient still reads as the same tint.
+   */
+  variant?: 'props' | 'wash'
 }) {
   return (
     <div
       aria-hidden
-      className={`pointer-events-none absolute top-0 left-1/2 h-full w-[1440px] -translate-x-1/2 ${className}`}
+      className={`pointer-events-none absolute top-0 left-1/2 h-full w-[1440px] -translate-x-1/2 ${
+        variant === 'props' ? 'hidden lg:block' : ''
+      } ${className}`}
     >
       {nodes.map((n, i) => (
         <Node key={i} n={n} />

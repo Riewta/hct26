@@ -38,7 +38,7 @@ export default function Calendar() {
     >
       {/* below every positioned layer, so the pasta and the cards both sit on top of the
           wash — the order Figma stacks them in */}
-      <HomeDecor nodes={CALENDAR_DECOR} className="-z-10" />
+      <HomeDecor nodes={CALENDAR_DECOR} variant="wash" className="-z-10" />
 
       <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col gap-10">
         <div ref={head.ref} className={head.cls}>

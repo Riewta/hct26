@@ -88,7 +88,7 @@ export default function Steps() {
     // the calendar's tail. 109 of tail here carries the row into the red prize band.
     <section id="steps" className="relative px-4 pt-20 pb-24 lg:px-15 lg:pt-0 lg:pb-[109px]">
       {/* the wash belongs under every other layer — see Calendar */}
-      <HomeDecor nodes={STEPS_DECOR} className="-z-10" />
+      <HomeDecor nodes={STEPS_DECOR} variant="wash" className="-z-10" />
 
       <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col gap-10">
         <div ref={head.ref} className={head.cls}>
@@ -98,7 +98,7 @@ export default function Steps() {
         {/* Figma splits the row 588 / 588 inside the 1200 column, 936 tall */}
         <div
           ref={body.ref}
-          className={`grid items-stretch gap-6 lg:min-h-[936px] lg:grid-cols-2 ${body.cls}`}
+          className={`grid items-stretch gap-6 md:grid-cols-2 lg:min-h-[936px] ${body.cls}`}
         >
           <div className="flex min-w-0 flex-col justify-center gap-6">
             {STEP_CARDS.map((card, i) => (
