@@ -133,7 +133,7 @@ function Bulbs({ items, x, y }: { items: typeof GARLIC_ROW_1; x: number; y: numb
           key={i}
           src={GARLIC}
           alt=""
-          className="absolute max-w-none object-cover"
+          className="decor-art absolute max-w-none object-cover"
           style={{ left: x + g.x, top: y + g.y, width: g.w, height: g.h }}
         />
       ))}
@@ -149,7 +149,7 @@ function Props({ items, x, y }: { items: Prop[]; x: number; y: number }) {
           key={i}
           src={p.src}
           alt=""
-          className="absolute max-w-none object-cover"
+          className="decor-art absolute max-w-none object-cover"
           style={{
             left: x + p.x + p.w / 2 - p.uw / 2,
             top: y + p.y + p.h / 2 - p.uh / 2,
@@ -172,7 +172,7 @@ function Canvas({ z, children }: { z: string; children: ReactNode }) {
   return (
     <div
       aria-hidden
-      className={`pointer-events-none absolute top-0 left-1/2 hidden h-[5312px] w-[1440px] -translate-x-1/2 overflow-hidden lg:block ${z}`}
+      className={`decor-canvas pointer-events-none absolute top-0 hidden h-[5312px] overflow-hidden lg:block ${z}`}
     >
       {children}
     </div>
@@ -185,7 +185,7 @@ export function AboutDecorBack() {
       {CROPS.map((c, i) => (
         <div
           key={i}
-          className="absolute overflow-hidden"
+          className="decor-art absolute overflow-hidden"
           style={{ left: c.x, top: c.y, width: c.w, height: c.h }}
         >
           <img
