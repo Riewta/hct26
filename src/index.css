@@ -2,6 +2,12 @@
 
 @theme {
   --font-thai: 'Noto Sans Thai', sans-serif;
+  /*
+   * Figma sets a few controls (the Google sign-in button, some numerals) in Sukhumvit Set.
+   * It is an Apple system face with no webfont, so it resolves natively on macOS/iOS and
+   * falls back to Noto Sans Thai elsewhere — matching metrics as closely as is available.
+   */
+  --font-display: 'Sukhumvit Set', 'Noto Sans Thai', sans-serif;
 
   /* Figma styles: Red / Yellow / Black / Gray 01 / Gray 02 */
   --color-brand-red: #c0563e;
@@ -18,6 +24,12 @@
   --color-yellow-grad-from: #d79a4e;
   --color-yellow-grad-to: #eca700;
 
+  /*
+   * Figma's shared card effect, radius 40. Do not "correct" this to 20px: Figma emits the
+   * same effect as `box-shadow: 0 0 40px` but as `filter: drop-shadow(0 0 20px)`, because a
+   * filter's blur argument is a standard deviation — half the box-shadow radius. This token
+   * is a box-shadow, so 40 is the matching value.
+   */
   --shadow-soft: 0 0 40px rgb(0 0 0 / 0.05);
 }
 
@@ -32,6 +44,12 @@ body {
   font-family: var(--font-thai);
   color: var(--color-ink);
   background: #fff;
+  /*
+   * Noto Sans Thai is a variable font and Figma pins its width axis to 100 on every text
+   * node. Without this the browser picks its own default width and every Thai glyph comes
+   * out a hair narrower than the design, which compounds across a line.
+   */
+  font-variation-settings: 'wdth' 100;
 }
 
 /*

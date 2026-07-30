@@ -1,46 +1,103 @@
 import Mark2024 from './Mark2024'
+import ScrollEdgeEffect from './ScrollEdgeEffect'
 import type { PastEvent } from '../pastEventsData'
 
 export default function PastEventCard({ event }: { event: PastEvent }) {
+  const { photoCrop, logo } = event
+
   return (
-    <article className="relative overflow-hidden rounded-[40px] p-6 lg:p-10">
-      <img
-        src={event.photo}
-        alt=""
-        aria-hidden
-        className="absolute inset-0 size-full object-cover"
+    // Figma: every card is a fixed 1200x800 tile, 40 of padding, 73 between the two columns
+    <article className="relative flex flex-col gap-8 overflow-hidden rounded-[40px] p-6 md:flex-row md:items-start lg:h-[800px] lg:gap-[73px] lg:p-10">
+      {photoCrop ? (
+        // Figma frames the 2025 shot wider than the card and slides it left
+        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+          <img
+            src={event.photo}
+            alt=""
+            className="absolute max-w-none"
+            style={{
+              left: `${photoCrop.left}%`,
+              top: `${photoCrop.top}%`,
+              width: `${photoCrop.width}%`,
+              height: `${photoCrop.height}%`,
+            }}
+          />
+        </div>
+      ) : (
+        <img
+          src={event.photo}
+          alt=""
+          aria-hidden
+          className="pointer-events-none absolute inset-0 size-full object-cover"
+        />
+      )}
+
+      {event.photoWash !== undefined && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{ background: `rgba(0,0,0,${event.photoWash})` }}
+        />
+      )}
+
+      {/* "Scroll Edge Effect - Soft" over the bottom 400: an ink plate, since it sits on
+          dark photography, at the per-card outer radius Figma gives each one */}
+      <ScrollEdgeEffect
+        tone="dark"
+        flip
+        blur={event.edgeBlur}
+        className="absolute inset-x-0 bottom-0 h-1/2 lg:h-[400px]"
       />
-      {/* dark scrim so the white copy stays legible over the photo */}
-      <div aria-hidden className="absolute inset-0 bg-ink/55 backdrop-blur-[10px]" />
 
-      <div className="relative flex flex-col gap-8 text-white md:flex-row md:gap-[73px]">
-        <div className="w-[180px] shrink-0 lg:w-[300px]">
-          {event.mark ? (
-            <img src={event.mark} alt={`โลโก้ ${event.title}`} className="w-full" />
-          ) : (
-            <Mark2024 />
-          )}
-        </div>
+      <div
+        className="relative w-[180px] shrink-0 overflow-hidden lg:w-[300px]"
+        style={{ aspectRatio: `300 / ${event.logoHeight}` }}
+      >
+        {logo === null ? (
+          <Mark2024 />
+        ) : logo.crop ? (
+          <img
+            src={logo.src}
+            alt=""
+            aria-hidden
+            className="absolute max-w-none"
+            style={{
+              left: `${logo.crop.left}%`,
+              top: `${logo.crop.top}%`,
+              width: `${logo.crop.width}%`,
+              height: `${logo.crop.height}%`,
+            }}
+          />
+        ) : (
+          <img
+            src={logo.src}
+            alt=""
+            aria-hidden
+            className="absolute inset-0 size-full object-cover"
+          />
+        )}
+      </div>
 
-        <div className="flex flex-1 flex-col gap-8 lg:gap-[73px]">
-          <header className="flex flex-col gap-4 lg:gap-6">
-            <h3 className="text-2xl leading-[1.4] font-medium lg:text-3xl">{event.title}</h3>
-            <p className="text-lg leading-[1.5] font-light lg:text-2xl">{event.subtitle}</p>
-          </header>
+      <div className="relative flex min-w-0 flex-1 flex-col gap-8 text-white lg:gap-[73px]">
+        <header className="flex flex-col gap-4 lg:gap-6">
+          <h3 className="text-2xl leading-[1.4] font-medium lg:text-3xl">{event.title}</h3>
+          <p className="text-lg leading-[1.5] font-light lg:text-2xl">{event.subtitle}</p>
+        </header>
 
-          <dl className="flex flex-col gap-6 lg:gap-8">
-            {event.awards.map((award) => (
-              <div key={award.label} className="flex flex-col gap-2 lg:gap-4">
-                <dt className="text-2xl leading-[1.4] font-medium lg:text-3xl">{award.label}</dt>
-                {award.winners.map((winner) => (
-                  <dd key={winner} className="text-lg leading-[1.5] font-light lg:text-2xl">
-                    {winner}
-                  </dd>
-                ))}
-              </div>
-            ))}
-          </dl>
-        </div>
+        <dl className="flex flex-col gap-6 lg:gap-8">
+          {event.awards.map((award) => (
+            <div key={award.label} className="flex flex-col gap-2 lg:gap-4">
+              <dt className="text-2xl leading-[1.4] font-medium lg:text-3xl lg:whitespace-nowrap">
+                {award.label}
+              </dt>
+              {award.winners.map((winner) => (
+                <dd key={winner} className="text-lg leading-[1.5] font-light lg:text-2xl">
+                  {winner}
+                </dd>
+              ))}
+            </div>
+          ))}
+        </dl>
       </div>
     </article>
   )
