@@ -7,60 +7,68 @@ import {
 } from '../../components/form/Field'
 import { PREFIX_OPTIONS } from '../../registrationData'
 
+/** Figma's field rows: a 24 gap, with the prefix select fixed at 100 wide. */
+const ROW = 'flex w-full flex-col items-start gap-6 lg:flex-row'
+const PREFIX = 'w-full lg:w-[100px] lg:shrink-0'
+const CELL = 'w-full lg:flex-1 lg:min-w-0'
+
 /**
- * The person block shared by the advisor and entrant steps. The entrant version
- * adds a date of birth; otherwise the field set is identical.
+ * The person block shared by the advisor and entrant steps. The entrant version adds a
+ * date of birth; otherwise the field set is identical. Figma gives the advisor block a
+ * 20 gap under its heading and the entrant block 24, hence `headingGap`.
  */
 export default function PersonFields({
   title,
   withBirthDate = false,
+  headingGap = 'gap-6',
 }: {
   title: string
   withBirthDate?: boolean
+  headingGap?: string
 }) {
   return (
-    <section className="flex flex-col gap-5">
+    <section className={`flex w-full flex-col items-center justify-center ${headingGap}`}>
       <SectionTitle title={title} onClear={() => {}} />
 
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-6 md:flex-row">
+      <div className="flex w-full flex-col items-start gap-8">
+        <div className={ROW}>
           <SelectField
             label="คำนำหน้า"
             required
             placeholder="มะลิ"
             options={PREFIX_OPTIONS}
-            className="lg:w-[100px] md:shrink-0"
+            className={PREFIX}
           />
-          <TextField label="ชื่อจริง (ภาษาไทย)" required placeholder="มะลิ" className="md:flex-1" />
-          <TextField label="ชื่อกลาง (ภาษาไทย)" placeholder="มะลิ" className="md:flex-1" />
-          <TextField label="นามสกุล (ภาษาไทย)" required placeholder="มะลิ" className="md:flex-1" />
+          <TextField label="ชื่อจริง (ภาษาไทย)" required placeholder="มะลิ" className={CELL} />
+          <TextField label="ชื่อกลาง (ภาษาไทย)" placeholder="มะลิ" className={CELL} />
+          <TextField label="นามสกุล (ภาษาไทย)" required placeholder="มะลิ" className={CELL} />
         </div>
 
-        <div className="flex flex-col gap-6 md:flex-row">
+        <div className={ROW}>
           <SelectField
             label="คำนำหน้า"
             required
             placeholder="มะลิ"
             options={['Mr.', 'Mrs.', 'Miss']}
-            className="lg:w-[100px] md:shrink-0"
+            className={PREFIX}
           />
-          <TextField label="First Name" required placeholder="มะลิ" className="md:flex-1" />
-          <TextField label="Middle Name" placeholder="มะลิ" className="md:flex-1" />
-          <TextField label="Last Name" required placeholder="มะลิ" className="md:flex-1" />
+          <TextField label="First Name" required placeholder="มะลิ" className={CELL} />
+          <TextField label="Middle Name" placeholder="มะลิ" className={CELL} />
+          <TextField label="Last Name" required placeholder="มะลิ" className={CELL} />
         </div>
 
-        <div className="flex flex-col gap-6 md:flex-row">
+        <div className={ROW}>
           {withBirthDate && (
             <DateField
               label="วัน/เดือน/ปีเกิด"
               required
               placeholder="เลือกวันที่"
-              className="md:flex-1"
+              className={CELL}
             />
           )}
-          <TextField label="อาหารที่แพ้" placeholder="มะลิ" className="md:flex-1" />
-          <TextField label="ประเภทอาหารพิเศษ" placeholder="มะลิ" className="md:flex-1" />
-          <TextField label="ยาที่แพ้" placeholder="มะลิ" className="md:flex-1" />
+          <TextField label="อาหารที่แพ้" placeholder="มะลิ" className={CELL} />
+          <TextField label="ประเภทอาหารพิเศษ" placeholder="มะลิ" className={CELL} />
+          <TextField label="ยาที่แพ้" placeholder="มะลิ" className={CELL} />
         </div>
 
         <TextArea label="โรคประจำตัว และวิธีปฐมพยาบาลเบื้องต้น" placeholder="รายละเอียด" />
@@ -71,17 +79,12 @@ export default function PersonFields({
 
 export function ContactFields() {
   return (
-    <section className="flex flex-col gap-6">
+    <section className="flex w-full flex-col items-center justify-center gap-6">
       <SectionTitle title="ช่องทางติดต่อ" onClear={() => {}} />
-      <div className="flex flex-col gap-6 md:flex-row">
-        <TextField label="อีเมล" required placeholder="example@email.com" className="md:flex-1" />
-        <TextField
-          label="เบอร์โทรศัพท์"
-          required
-          placeholder="080-000-0000"
-          className="md:flex-1"
-        />
-        <TextField label="LINE ID" placeholder="มะลิ" className="md:flex-1" />
+      <div className={ROW}>
+        <TextField label="อีเมล" required placeholder="example@email.com" className={CELL} />
+        <TextField label="เบอร์โทรศัพท์" required placeholder="080-000-0000" className={CELL} />
+        <TextField label="LINE ID" placeholder="มะลิ" className={CELL} />
       </div>
     </section>
   )

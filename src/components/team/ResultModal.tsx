@@ -1,6 +1,13 @@
 import { useEffect } from 'react'
 
-/** Outcome dialog shown over the dashboard once selection results are out. */
+const CLOSE = '/assets/figma/4bd7505c0eec086659f8bce6f796799c7aa38350.svg'
+
+/**
+ * Outcome dialog shown over the dashboard once selection results are out.
+ *
+ * Figma 708:3166 — an 800x823 sheet at y=100, 40 of padding, 32 between the mascot, the
+ * message block and the button stack, over a light grey scrim that blurs the page behind it.
+ */
 export default function ResultModal({
   open,
   image,
@@ -36,43 +43,54 @@ export default function ResultModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4"
+      className="fixed inset-0 z-50 overflow-y-auto bg-[rgba(194,194,194,0.3)] backdrop-blur-[5px]"
       onClick={onClose}
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        onClick={(e) => e.stopPropagation()}
-        className="relative flex w-full max-w-[700px] flex-col items-center gap-6 rounded-[32px] bg-white px-6 pt-14 pb-8 lg:px-15"
-      >
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="ปิด"
-          className="absolute top-6 right-6 flex size-8 items-center justify-center rounded-full text-2xl leading-none text-gray-2 transition-colors hover:bg-[#efefef] hover:text-ink"
+      <div className="flex min-h-full flex-col items-center justify-center px-4 py-6 lg:block lg:p-0">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={title}
+          onClick={(e) => e.stopPropagation()}
+          className="relative flex w-full max-w-[800px] flex-col items-center justify-center gap-6 rounded-[32px] border border-[#dcdcdc] bg-white p-6 lg:mx-auto lg:mt-[100px] lg:mb-[101px] lg:h-[823px] lg:w-[800px] lg:gap-8 lg:p-10"
         >
-          ✕
-        </button>
-
-        <img src={image} alt="" aria-hidden className="w-[200px] object-contain lg:w-[260px]" />
-
-        <div className="flex flex-col items-center gap-4">
-          <h2
-            className={`text-center text-2xl leading-[1.4] font-semibold lg:text-[32px] ${titleClassName}`}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="ปิด"
+            className="absolute top-[16px] right-[16px] size-[32px] overflow-clip transition-opacity hover:opacity-70 lg:top-[31px] lg:right-[31px]"
           >
-            {title}
-          </h2>
-          <p className="text-center text-base text-gray-1 lg:text-lg">
-            {lines.map((line) => (
-              <span key={line} className="block">
-                {line}
-              </span>
-            ))}
-          </p>
-        </div>
+            <img src={CLOSE} alt="" aria-hidden className="absolute inset-0 block size-full" />
+          </button>
 
-        {actions && <div className="flex w-full flex-col gap-3">{actions}</div>}
+          <img
+            src={image}
+            alt=""
+            aria-hidden
+            className="size-[200px] shrink-0 object-cover sm:size-[302px]"
+          />
+
+          <div className="flex w-full flex-col items-center gap-4 lg:gap-6">
+            <h2
+              className={`text-center text-[24px] leading-[1.4] font-semibold lg:text-[40px] ${titleClassName}`}
+            >
+              {title}
+            </h2>
+            <p className="w-full text-center text-[16px] leading-[1.6] text-gray-2 lg:text-[24px]">
+              {lines.map((line) => (
+                <span key={line} className="block">
+                  {line}
+                </span>
+              ))}
+            </p>
+          </div>
+
+          {actions && (
+            <div className="flex w-full flex-col items-start justify-center gap-4 lg:gap-6">
+              {actions}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

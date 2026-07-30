@@ -5,17 +5,29 @@ export const TEAM = {
   updatedAt: '26 ก.ค. 69 15:47 น.',
 }
 
+/** Figma exports each tab glyph twice — #282828 when the tab is selected, #8C8C8C when not. */
+const USER_ICON = {
+  on: '/assets/figma/46435d09968aa3cd78e1661332b577f07549b180.svg',
+  off: '/assets/figma/051a604d8e88c2ee21caed756bbbf72bdd1d3917.svg',
+}
+
+const MORTARBOARD_ICON = {
+  on: '/assets/figma/273c4fd108326af21c9881e87baf774bd9e8da90.svg',
+  off: '/assets/figma/2b32f248e805ae67208753776a4847b870f372b3.svg',
+}
+
 export type Person = {
   /** Tab label. */
   tab: string
-  icon: string
+  icon: { on: string; off: string }
   /** Heading of the first detail section. */
   heading: string
   thaiPrefix: string
   thaiName: string
   enPrefix: string
   enName: string
-  birthDate: string
+  /** Entrants carry a birth date; the advisor row in the design does not. */
+  birthDate?: string
   email: string
   phone: string
   lineId: string
@@ -58,10 +70,9 @@ const ADVISOR_DOCUMENTS = [
 
 const SHARED = {
   thaiPrefix: 'นางสาว',
-  thaiName: 'ณัฐชา เดชดำรง',
+  thaiName: 'ณัฐชา  เดชดำรง',
   enPrefix: 'Mrs.',
   enName: 'Natasha Dejdumrong',
-  birthDate: '26 กรกฎาคม 2551',
   email: 'abcd.cpe@kmutt.ac.th',
   phone: '0912345678',
   lineId: 'abcd',
@@ -70,28 +81,31 @@ const SHARED = {
 export const MEMBERS: Person[] = [
   {
     tab: 'ผู้เข้าแข่งขันคนที่ 1',
-    icon: '/assets/icon-user.svg',
+    icon: USER_ICON,
     heading: '1. ข้อมูลผู้เข้าแข่งขันคนที่ 1',
     ...SHARED,
+    birthDate: '26 กรกฎาคม 2551',
     documents: ENTRANT_DOCUMENTS,
   },
   {
     tab: 'ผู้เข้าแข่งขันคนที่ 2',
-    icon: '/assets/icon-user.svg',
+    icon: USER_ICON,
     heading: '1. ข้อมูลผู้เข้าแข่งขันคนที่ 2',
     ...SHARED,
+    birthDate: '26 กรกฎาคม 2551',
     documents: ENTRANT_DOCUMENTS,
   },
   {
     tab: 'ผู้เข้าแข่งขันคนที่ 3',
-    icon: '/assets/icon-user.svg',
+    icon: USER_ICON,
     heading: '1. ข้อมูลผู้เข้าแข่งขันคนที่ 3',
     ...SHARED,
+    birthDate: '26 กรกฎาคม 2551',
     documents: ENTRANT_DOCUMENTS,
   },
   {
     tab: 'อาจารย์',
-    icon: '/assets/icon-mortarboard.svg',
+    icon: MORTARBOARD_ICON,
     heading: '1. ข้อมูลอาจารย์',
     ...SHARED,
     documents: ADVISOR_DOCUMENTS,
@@ -106,6 +120,11 @@ export type StatusStep = {
   /** Right-hand status label; omitted when the step lists per-person rows instead. */
   label?: string
   tone: StepTone
+  /**
+   * Figma draws the badge at 28px instead of 32px on a couple of steps — the pending
+   * document review and every failed outcome — so the diameter is part of the data.
+   */
+  compact?: boolean
   /** Per-person review rows shown inside the document-review step. */
   rows?: { title: string; label: string; tone: StepTone }[]
   /** Renders the ติดต่อทีมงาน social row under the step. */
@@ -142,6 +161,7 @@ export const STATUS_STEPS: Record<TeamStatus, StatusStep[]> = {
     {
       title: 'ตรวจสอบเอกสาร',
       tone: 'pending',
+      compact: true,
       rows: MEMBERS.map((m) => person(m.tab, 'กำลังตรวจสอบ', 'pending')),
     },
   ],
@@ -192,17 +212,22 @@ export const STATUS_STEPS: Record<TeamStatus, StatusStep[]> = {
   ],
 }
 
+/** Figma 708:3147 — the second card the qualified dashboard stacks under the status card. */
+export const DISCORD_CARD = {
+  title: 'การเข้าแข่งขันรอบคัดเลือก',
+  subtitle: 'กรุณาเข้าร่วม Discord เพื่อใช้ในการแข่งขัน',
+  label: 'เข้าร่วม Discord ',
+  action: 'รับรหัสเข้าร่วม',
+}
+
 export const QUALIFIED_MODAL = {
-  image: '/assets/mascot-success.png',
+  image: '/assets/figma/8e7000b311d9ed819a112098ef1a6399fc8d8743.png',
   title: 'ทีมของคุณมีสิทธิ์เข้าแข่งขันรอบคัดเลือก',
-  lines: [
-    'ขอแสดงความยินดีกับทีมของคุณ',
-    'กรุณาเข้าร่วม Discord สำหรับใช้ในการแข่งขันรอบคัดเลือก',
-  ],
+  lines: ['ขอแสดงความยินดีกับทีมของคุณ', 'กรุณาเข้าร่วม Discord สำหรับใช้ในการแข่งขันรอบคัดเลือก'],
 }
 
 export const REJECTED_MODAL = {
-  image: '/assets/mascot-error.png',
+  image: '/assets/figma/88a60428462d844f1f3ed64f3d0783097c2d33ac.png',
   title: 'ทีมของคุณไม่มีสิทธิ์เข้าแข่งขันรอบคัดเลือก',
   lines: [
     'ขออภัยทีม เอกสารของทีมของคุณไม่ผ่านเกณฑ์การพิจารณา',

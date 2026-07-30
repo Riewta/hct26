@@ -25,19 +25,19 @@ export const REQUIRED_DOCUMENTS: {
   document: PolicyDocument
 }[] = [
   {
-    icon: '/assets/icon-hand.svg',
+    icon: '/assets/figma/8198de2c60e10732616a8a9af8fed56ad7396820.svg',
     title: 'นโยบายความเป็นส่วนตัว',
     description: 'การเก็บและใช้ข้อมูลส่วนบุคคลของคุณ',
     document: PRIVACY_POLICY,
   },
   {
-    icon: '/assets/icon-document.svg',
+    icon: '/assets/figma/176d32b711d514c6bbb10d973644f3085a117ce1.svg',
     title: 'กฏกติกาการแข่งขัน',
     description: 'หลักเกณฑ์และข้อปฏิบัติในการแข่งขัน',
     document: COMPETITION_RULES,
   },
   {
-    icon: '/assets/logo-codern.png',
+    icon: '/assets/figma/03e489cce381543e38ddae4414d0e87ba31d38d1.png',
     title: 'ข้อกำหนดการใช้งาน Codern',
     description: 'เงื่อนไขการใช้งานระบบส่งโค้ดและตรวจผล',
     rounded: true,
@@ -49,17 +49,17 @@ export const REQUIRED_DOCUMENTS: {
 /** Opt-in consents, each answered ยอมรับ / ไม่ยอมรับ. */
 export const CONSENTS = [
   {
-    icon: '/assets/icon-stethoscope.svg',
+    icon: '/assets/figma/bb7946494cd076deb5c70aed74d1698107420800.svg',
     title: 'ความยินยอมข้อมูลสุขภาพ',
     description: 'การเก็บข้อมูลแพ้อาหาร แพ้ยา และโรคประจำตัว',
   },
   {
-    icon: '/assets/icon-pencil.svg',
+    icon: '/assets/figma/0687a0a75101d7c86b25b1cda6c52c329fd14299.svg',
     title: 'คำรับรองความยินยอมจากผู้ปกครอง',
     description: 'สำหรับผู้เข้าแข่งขันอายุต่ำกว่า 20 ปี',
   },
   {
-    icon: '/assets/icon-photo-album.svg',
+    icon: '/assets/figma/2ba7d78a18660c503f44006d5ff633ec6fc1f6aa.svg',
     title: 'ความยินยอมใช้ภาพเพื่อประชาสัมพันธ์',
     description: 'ใช้ภาพถ่าย/วิดีโอในกิจกรรมเพื่อประชาสัมพันธ์',
   },
