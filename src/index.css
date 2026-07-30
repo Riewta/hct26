@@ -1,13 +1,13 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 @theme {
-  --font-thai: 'Noto Sans Thai', sans-serif;
+  --font-thai: "Noto Sans Thai", sans-serif;
   /*
    * Figma sets a few controls (the Google sign-in button, some numerals) in Sukhumvit Set.
    * It is an Apple system face with no webfont, so it resolves natively on macOS/iOS and
    * falls back to Noto Sans Thai elsewhere — matching metrics as closely as is available.
    */
-  --font-display: 'Sukhumvit Set', 'Noto Sans Thai', sans-serif;
+  --font-display: "Sukhumvit Set", "Noto Sans Thai", sans-serif;
 
   /* Figma styles: Red / Yellow / Black / Gray 01 / Gray 02 */
   --color-brand-red: #c0563e;
@@ -49,7 +49,32 @@ body {
    * node. Without this the browser picks its own default width and every Thai glyph comes
    * out a hair narrower than the design, which compounds across a line.
    */
-  font-variation-settings: 'wdth' 100;
+  font-variation-settings: "wdth" 100;
+}
+
+/*
+ * Decor canvases are transcribed against Figma's 1440 artboard and scale with the viewport,
+ * so the props keep their positions and spread right across the page.
+ *
+ * `.decor-art` scales each piece about its own centre. It shrinks a prop in place, but a
+ * prop that is meant to run off an edge pulls away from it and ends up floating, so this
+ * stays at 1 — Figma's own size — unless a smaller pile is worth that cost.
+ */
+.decor-canvas {
+  --decor-art: 1;
+  left: 50%;
+  width: 1440px;
+  /* the divisor must carry a unit — `100vw / 1440` is invalid and drops the whole rule */
+  transform: translateX(-50%) scale(min(1, 100vw / 1440px));
+  transform-origin: top center;
+}
+
+/*
+ * `scale` rather than a `transform` function: the props already carry rotate/skew/flip in
+ * `transform`, and the standalone property composes with those instead of replacing them.
+ */
+.decor-art {
+  scale: var(--decor-art, 1);
 }
 
 /*

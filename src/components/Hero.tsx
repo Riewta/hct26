@@ -66,14 +66,18 @@ export default function Hero() {
   return (
     // Figma runs the pasta past every edge of the masthead, so this section must not clip;
     // the 379 tail below the CTA is the run-up to the calendar section.
-    <section id="hero" className="relative px-4 pt-32 pb-40 lg:px-15 lg:pt-[183px] lg:pb-[379px]">
+    // the nav's 160px blur band is a fixed height, so the masthead keeps Figma's 183 top
+    // offset at every width — dropping to a smaller padding tucks the wordmark under it
+    <section id="hero" className="relative px-4 pt-[183px] pb-40 lg:px-15 lg:pb-[379px]">
       <HomeDecor nodes={HERO_DECOR} className="z-0" />
 
       <div
         ref={content.ref}
         className={`relative z-10 mx-auto flex w-full max-w-[1200px] flex-col items-center text-center ${content.cls}`}
       >
-        <div className="relative aspect-[810.508/421] w-full max-w-[810.508px]">
+        {/* Figma's masthead is 810.508 wide on the 1440 artboard; the page zoom carries the
+            ratio, so this only has to hold the px. Phones fall back to a readable cap. */}
+        <div className="relative aspect-[810.508/421] w-full max-w-[420px] sm:max-w-[810.508px]">
           {NUMERALS.map((numeral, i) => (
             <Numeral key={i} {...numeral} />
           ))}
@@ -93,7 +97,7 @@ export default function Hero() {
           </div>
         </div>
 
-        <p className="mt-[42px] w-full max-w-[954px] text-base leading-[1.5] font-light lg:text-2xl">
+        <p className="mt-[42px] w-full text-base leading-[1.5] font-light sm:max-w-[954px] lg:text-2xl">
           {HERO_LINES.map((line) => (
             <span key={line} className="block">
               {line}
