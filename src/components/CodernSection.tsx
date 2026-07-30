@@ -1,31 +1,67 @@
+import ScrollEdgeEffect from './ScrollEdgeEffect'
 import { CODERN_PARAGRAPHS } from '../aboutData'
 import { useReveal } from '../hooks/useReveal'
 
+/**
+ * Figma node 708:739 "Section / Contact Info" — page y 1106, 1151.7 tall, 120 side
+ * padding, 10 top and bottom. The trailing pad also carries the 104.3 Figma leaves
+ * before the FAQ section starts at page y 2362.
+ */
 export default function CodernSection() {
   const card = useReveal()
 
   return (
-    <section id="codern" className="relative overflow-hidden px-4 py-20 lg:px-15 lg:py-30">
-      {/* soft glow behind the card, standing in for the blurred circle in Figma */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute top-1/2 right-0 -z-10 size-[1100px] -translate-y-1/2 translate-x-1/3 rounded-full bg-brand-yellow/10 blur-[200px]"
-      />
+    <section id="codern" className="relative px-4 py-20 lg:px-[120px] lg:pt-[10px] lg:pb-[114.3px]">
+      {/*
+       * Decoration / Circle (708:740): a 20%-opacity #D79A4E blob under a 400px Gaussian
+       * blur, turned 90° and flipped. The export already contains the blur, which is why
+       * the bitmap is 800px larger than its box on every side.
+       */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div
+          className="absolute hidden lg:block"
+          style={{
+            left: 611 + 1125 / 2 - 1155 / 2,
+            top: 10 + 1155 / 2 - 1125 / 2,
+            width: 1155,
+            height: 1125,
+            transform: 'rotate(90deg) scaleY(-1)',
+          }}
+        >
+          <img
+            src="/assets/figma/72033216c90ff7681fc2bf9386c77996c57c1e83.svg"
+            alt=""
+            className="absolute max-w-none"
+            style={{ left: -800, top: -800, width: 2755, height: 2725 }}
+          />
+        </div>
+      </div>
 
       <div
         ref={card.ref}
-        className={`mx-auto max-w-[1200px] overflow-hidden rounded-3xl bg-white shadow-soft ${card.cls}`}
+        className={`relative z-10 mx-auto flex max-w-[1200px] flex-col justify-center overflow-hidden rounded-3xl bg-white shadow-soft ${card.cls}`}
       >
-        <img
-          src="/assets/codern-screenshot.png"
-          alt="หน้าจอแพลตฟอร์ม Codern"
-          className="aspect-[1954/1154] w-full object-cover"
-        />
-        <div className="flex flex-col gap-5 p-6 lg:p-10">
+        <div className="relative w-full">
+          <img
+            src="/assets/figma/a36ebf838df297eb767fed223d861f66757fe4a2.png"
+            alt="หน้าจอแพลตฟอร์ม Codern"
+            className="aspect-[1954/1154] w-full rounded-t-[20px] object-cover"
+          />
+          {/* the screenshot's bottom 160 fades out under a progressive blur */}
+          <ScrollEdgeEffect
+            tone="dark"
+            flip
+            maskAlpha={0.9}
+            className="absolute inset-x-0 bottom-0 h-[160px]"
+          />
+        </div>
+
+        <div className="flex w-full flex-col gap-5 p-6 lg:gap-5 lg:p-10">
           <p className="text-lg leading-[1.5] font-medium text-brand-yellow lg:text-2xl">02</p>
           <div className="flex flex-col gap-1">
             <h2 className="text-3xl leading-[1.4] font-semibold lg:text-5xl">แพลตฟอร์ม Codern</h2>
-            <div className="flex flex-col gap-6 text-base leading-[1.5] font-light lg:text-2xl">
+            {/* one blank 36px line between the paragraphs, as Figma sets them */}
+            <div className="flex flex-col gap-6 text-base leading-[1.5] font-light lg:gap-9 lg:text-2xl">
               {CODERN_PARAGRAPHS.map((p) => (
                 <p key={p}>{p}</p>
               ))}

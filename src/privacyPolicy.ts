@@ -11,8 +11,6 @@ export type PolicyDocument = {
   subtitle: string
   /** Effective-date line above the sections, when the document has one. */
   effective?: string
-  /** Line beside the accept/decline buttons, when the document has one. */
-  acknowledgement?: string
   /** Renders the ดาวน์โหลด button in the footer. */
   downloadable?: boolean
   sections: { title: string; body: PolicyBlock[] }[]
@@ -22,7 +20,7 @@ const SUBTITLE = 'โครงการแข่งขันแก้ไขป�
 
 /** Figma node 708:2169 — Competition Rules Modal. */
 export const COMPETITION_RULES: PolicyDocument = {
-  icon: '/assets/icon-document-40.svg',
+  icon: '/assets/figma/176d32b711d514c6bbb10d973644f3085a117ce1.svg',
   title: 'กฏกติกาการแข่งขัน',
   subtitle: SUBTITLE,
   downloadable: true,
@@ -104,13 +102,22 @@ export const POLICY_SECTIONS: { title: string; body: PolicyBlock[] }[] = [
     body: [
       'เราเก็บรวบรวม ใช้ หรือเปิดเผยข้อมูลส่วนบุคคลของคุณเพื่อ:',
       [
-        { bullet: 'ยืนยันตัวตนและตรวจสอบคุณสมบัติของผู้สมัคร', sub: ['ฐานทางกฎหมาย: การปฏิบัติตามสัญญาและความยินยอม'] },
-        { bullet: 'ดำเนินการจัดการแข่งขัน แจ้งผล และติดต่อประสานงาน', sub: ['ฐานทางกฎหมาย: การปฏิบัติตามสัญญา'] },
+        {
+          bullet: 'ยืนยันตัวตนและตรวจสอบคุณสมบัติของผู้สมัคร',
+          sub: ['ฐานทางกฎหมาย: การปฏิบัติตามสัญญาและความยินยอม'],
+        },
+        {
+          bullet: 'ดำเนินการจัดการแข่งขัน แจ้งผล และติดต่อประสานงาน',
+          sub: ['ฐานทางกฎหมาย: การปฏิบัติตามสัญญา'],
+        },
         {
           bullet: 'จัดเตรียมความปลอดภัยด้านอาหารและสุขภาพระหว่างการแข่งขัน',
           sub: ['ฐานทางกฎหมาย: ความยินยอมโดยชัดแจ้ง (เนื่องจากเป็นข้อมูลอ่อนไหว)'],
         },
-        { bullet: 'ปฏิบัติตามกฎหมายและกฎระเบียบของหน่วยงานราชการ', sub: ['ฐานทางกฎหมาย: หน้าที่ตามกฎหมาย'] },
+        {
+          bullet: 'ปฏิบัติตามกฎหมายและกฎระเบียบของหน่วยงานราชการ',
+          sub: ['ฐานทางกฎหมาย: หน้าที่ตามกฎหมาย'],
+        },
       ],
     ],
   },
@@ -205,10 +212,9 @@ export const POLICY_SECTIONS: { title: string; body: PolicyBlock[] }[] = [
 
 /** Figma node 708:2047 shell + node 719:36 content — Privacy Policy Modal. */
 export const PRIVACY_POLICY: PolicyDocument = {
-  icon: '/assets/icon-hand-40.svg',
+  icon: '/assets/figma/8198de2c60e10732616a8a9af8fed56ad7396820.svg',
   title: 'นโยบายความเป็นส่วนตัว',
   subtitle: SUBTITLE,
   effective: 'มีผลบังคับใช้ตั้งแต่วันที่ 17 สิงหาคม 2569 (ปรับปรุงล่าสุด: 10 สิงหาคม 2569)',
-  acknowledgement: 'ฉันได้อ่านและยอมรับข้อกำหนดการใช้งานแพลตฟอร์ม Codern ข้างต้น',
   sections: POLICY_SECTIONS,
 }

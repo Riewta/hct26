@@ -13,6 +13,7 @@ import TermsStep from './pages/register/TermsStep'
 import SuccessStep from './pages/register/SuccessStep'
 import ErrorStep from './pages/register/ErrorStep'
 import MyTeam from './pages/MyTeam'
+import NotFound from './pages/NotFound'
 
 /** Marketing pages share the nav + footer chrome; the auth screens stand alone. */
 function SiteLayout() {
@@ -44,6 +45,8 @@ export default function App() {
       <Route path="/register/success" element={<SuccessStep />} />
       <Route path="/register/error" element={<ErrorStep />} />
       <Route path="/my-team" element={<MyTeam />} />
+      {/* Figma 708:1240 — the 404 page stands alone, without the nav/footer chrome */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }

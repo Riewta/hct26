@@ -22,14 +22,13 @@ export const TIMELINE_STEPS = [
   { date: '7 พ.ย.', lines: ['การแข่งขันรอบ 36 ทีมและรอบชิงชนะเลิศ รูปแบบ Onsite'] },
 ]
 
+/** Copy only — each card's photo arrangement is pinned in `Steps`, not picked here. */
 export const STEP_CARDS = [
   {
-    image: '/assets/step-team.png',
     title: 'การจัดทีม',
     body: 'เปิดรับนักเรียนระดับมัธยมศึกษาตอนปลายหรือเทียบเท่า โดยให้รวมกลุ่มสมัครเข้าแข่งขันในนามทีม ทีมละ 2-3 คน และสมาชิกทุกคนในทีมต้องศึกษาอยู่ในสถานศึกษาเดียวกัน',
   },
   {
-    image: '/assets/step-advisor.png',
     title: 'อาจารย์ที่ปรึกษาทีม',
     body: 'ทุกทีมต้องมีอาจารย์ที่ปรึกษาประจำทีม ทีมละ 1 คน โดยต้องเป็นอาจารย์จากสถานศึกษาเดียวกันกับผู้เข้าแข่งขัน ทั้งนี้แต่ละสถานศึกษาสามารถส่งทีมเข้าร่วมการแข่งขันได้ไม่เกิน 2 ทีม',
   },
@@ -96,6 +95,5 @@ export const FOOTER_ABOUT = {
   title:
     'โครงการแข่งขันแก้ไขปัญหาด้วยการเขียนโปรแกรมคอมพิวเตอร์ ประจำปี 2569 (BangMod Hackathon 2026)',
   body: 'จัดโดยภาควิชาวิศวกรรมคอมพิวเตอร์ คณะวิศวกรรมศาสตร์ มหาวิทยาลัยเทคโนโลยีพระจอมเกล้า ธนบุรี อาคารวิศววัฒนะ ชั้น 10-11 เลขที่ 126 ถ.ประชาอุทิศ แขวงบางมด เขตทุ่งครุ กรุงเทพฯ 10140',
-  copyright:
-    '© 2026 Bangmod Hackathon, Department of Computer Engineering. All rights reserved.',
+  copyright: '© 2026 Bangmod Hackathon, Department of Computer Engineering. All rights reserved.',
 }

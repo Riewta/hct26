@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import GoogleLogo from '../GoogleLogo'
-import Decor from '../Decor'
+import { WizardBackdrop } from '../AuthBackdrop'
+import ScrollEdgeEffect from '../ScrollEdgeEffect'
 
 export const TOTAL_STEPS = 5
 
@@ -10,57 +11,81 @@ const CRUMBS = ['ข้อมูลทีม', 'อาจารย์', 'ผู�
 /** Which breadcrumb is active for each 1-based step. Steps 3 and 4 share a crumb. */
 const CRUMB_FOR_STEP = [0, 1, 2, 2, 3]
 
-const PASTA = [
-  { src: '/assets/pasta-a.png', x: 100, y: 4, size: 320, rotate: 12 },
-  { src: '/assets/pasta-a.png', x: 88, y: 1, size: 260, rotate: -40 },
-  { src: '/assets/pasta-a.png', x: 108, y: 14, size: 220, rotate: 60 },
-  { src: '/assets/pasta-b.png', x: 97, y: 20, size: 200, rotate: -15 },
-]
-
+/**
+ * Figma 708:1255 and friends. The wizard sits on #fefdfc inside a 1440 frame with 200
+ * of side padding, which gives the 1040 column; the top bar and the form card are two
+ * rounded-24 white plates 40 apart.
+ *
+ * `withTomatoes` is false only on the terms step, which drops the tomato cluster.
+ */
 export default function WizardShell({
   step,
   children,
   actions,
+  withTomatoes = true,
+  blurBehindContent = false,
 }: {
   step: number
   children: ReactNode
   actions: ReactNode
+  /** The terms step drops the tomato cluster. */
+  withTomatoes?: boolean
+  /**
+   * Figma stacks the scroll-edge blur above the whole page on the first four steps —
+   * the top bar really is softened there — but re-orders it behind the content on the
+   * terms step, so the layer is switchable.
+   */
+  blurBehindContent?: boolean
 }) {
   const activeCrumb = CRUMB_FOR_STEP[step - 1]
 
   return (
-    <div className="relative min-h-dvh overflow-hidden bg-white">
-      <Decor items={PASTA} className="hidden lg:block" />
+    <div className="relative flex min-h-dvh flex-col bg-[#fefdfc]">
+      <WizardBackdrop withTomatoes={withTomatoes} />
 
-      <div className="relative z-10 mx-auto flex max-w-[1040px] flex-col gap-4 px-4 py-8 lg:py-15">
-        <header className="flex items-center justify-between gap-4 rounded-3xl px-2 lg:px-5">
+      <div className="relative z-10 mx-auto flex w-full max-w-[1040px] flex-1 flex-col gap-4 px-4 py-8 lg:gap-10 lg:px-0 lg:pt-15 lg:pb-0">
+        <header className="flex items-center justify-between gap-4 rounded-[24px] bg-white p-4 shadow-soft lg:p-5">
           <Link to="/">
             <img
-              src="/assets/logo-nav.png"
+              src="/assets/figma/95f39e217dc710a779c3c0b6cf30b3a377d857f5.png"
               alt="BangMod Hackathon 2026"
-              className="h-10 w-auto lg:h-[50px]"
+              className="h-10 w-auto object-cover lg:h-[50px] lg:w-[222px]"
             />
           </Link>
           <button
             type="button"
-            className="flex items-center gap-4 rounded-xl border border-[#dcdcdc] bg-white py-3 pr-4 pl-5 text-lg transition-colors hover:border-brand-red lg:text-xl"
+            className="flex items-center justify-center gap-4 rounded-[12px] border border-[#dcdcdc] bg-white py-3 pr-4 pl-5 text-lg leading-[1.4] transition-colors hover:border-brand-red lg:text-xl"
           >
             <GoogleLogo />
             <span className="hidden sm:inline">ชื่อบัญชีผู้ใช้</span>
-            <img src="/assets/icon-chevron-down.svg" alt="" aria-hidden className="size-6" />
+            <img
+              src="/assets/figma/da1c84a7a51ab6256b69963fbe9c03c1607713d3.svg"
+              alt=""
+              aria-hidden
+              className="size-6"
+            />
           </button>
         </header>
 
-        <div className="flex flex-col gap-10 rounded-3xl bg-white p-6 shadow-soft lg:p-10">
-          <div className="flex flex-col gap-4">
-            <div>
+        {/*
+         * The card's bottom padding is 0 because the action bar supplies it: Figma pins
+         * that bar to the card's bottom edge on its own 20 inset, so it cancels the
+         * card's 40 side padding and stays 20 below the content.
+         */}
+        <div className="flex flex-1 flex-col rounded-[24px] bg-white p-6 pb-0 shadow-soft lg:min-h-[832px] lg:p-10 lg:pb-0">
+          <div className="flex flex-1 flex-col gap-6 lg:gap-10">
+            {/* title and crumbs sit flush in Figma — no gap between them */}
+            <div className="flex flex-col items-start">
               <h1 className="text-2xl leading-[1.4] font-semibold lg:text-[32px]">
                 ลงทะเบียนเข้าแข่งขัน
               </h1>
-              <nav aria-label="ขั้นตอน" className="flex flex-wrap gap-2 text-base lg:text-lg">
+              <nav
+                aria-label="ขั้นตอน"
+                className="flex flex-wrap items-start gap-2 text-base leading-[normal] lg:text-lg"
+              >
                 {CRUMBS.map((crumb, i) => (
                   <span key={crumb} className="flex gap-2">
-                    <span className={i === activeCrumb ? 'text-ink' : 'text-gray-2'}>{crumb}</span>
+                    <span className={i <= activeCrumb ? 'text-ink' : 'text-gray-2'}>{crumb}</span>
                     {i < CRUMBS.length - 1 && <span className="text-gray-2">&gt;</span>}
                   </span>
                 ))}
@@ -68,7 +93,7 @@ export default function WizardShell({
             </div>
 
             <div
-              className="flex h-2 gap-1 overflow-hidden rounded-full"
+              className="flex h-2 gap-1 overflow-hidden rounded-[100px]"
               role="progressbar"
               aria-valuenow={step}
               aria-valuemin={1}
@@ -82,28 +107,35 @@ export default function WizardShell({
                 />
               ))}
             </div>
+
+            {children}
           </div>
 
-          {children}
+          <div className="mt-5 -mx-6 flex items-center justify-between gap-4 rounded-b-[24px] bg-white p-4 lg:-mx-10 lg:p-5">
+            {actions}
+          </div>
         </div>
-
-        <div className="flex items-center justify-between gap-4 px-2 lg:px-5">{actions}</div>
       </div>
+
+      <ScrollEdgeEffect
+        className={`fixed inset-x-0 top-0 h-[160px] ${blurBehindContent ? 'z-0' : 'z-30'}`}
+      />
     </div>
   )
 }
 
+/** Figma's step buttons: rounded-12, a 12 gap and asymmetric padding around the icon. */
+const STEP_BUTTON =
+  'flex items-center justify-center gap-3 rounded-[12px] bg-brand-red py-4 text-lg leading-[1.4] font-medium text-white transition-opacity hover:opacity-90 lg:text-xl'
+
 export function BackButton({ to }: { to: string }) {
   return (
-    <Link
-      to={to}
-      className="flex h-15 items-center gap-3 rounded-[20px] bg-brand-red px-4 text-lg font-medium text-white transition-opacity hover:opacity-90 lg:text-xl"
-    >
+    <Link to={to} className={`${STEP_BUTTON} pr-6 pl-4`}>
       <img
-        src="/assets/icon-chevron-left.svg"
+        src="/assets/figma/41418d29fd1f773c0f14bc317b19bd65b6f49ee8.svg"
         alt=""
         aria-hidden
-        className="size-6 brightness-0 invert"
+        className="size-6"
       />
       ย้อนกลับ
     </Link>
@@ -112,17 +144,23 @@ export function BackButton({ to }: { to: string }) {
 
 export function NextButton({ to, label = 'ถัดไป' }: { to: string; label?: string }) {
   return (
-    <Link
-      to={to}
-      className="ml-auto flex h-15 items-center gap-3 rounded-[20px] bg-brand-red px-6 text-lg font-medium text-white transition-opacity hover:opacity-90 lg:text-xl"
-    >
+    <Link to={to} className={`${STEP_BUTTON} ml-auto pr-4 pl-6`}>
       {label}
       <img
-        src="/assets/icon-chevron-left.svg"
+        src="/assets/figma/a275512325b630305418a611fed5319ba90acfc8.svg"
         alt=""
         aria-hidden
-        className="size-6 rotate-180 brightness-0 invert"
+        className="size-6"
       />
+    </Link>
+  )
+}
+
+/** The terms step's submit: same pill, no icon, so the padding is symmetric. */
+export function SubmitButton({ to, label }: { to: string; label: string }) {
+  return (
+    <Link to={to} className={`${STEP_BUTTON} ml-auto px-6`}>
+      {label}
     </Link>
   )
 }

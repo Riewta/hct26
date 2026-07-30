@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
+import ScrollEdgeEffect from './ScrollEdgeEffect'
 import { NAV_LINKS } from '../data'
 
 export default function Navbar() {
@@ -7,15 +8,7 @@ export default function Navbar() {
 
   return (
     <div className="fixed inset-x-0 top-0 z-50 px-4 pt-4 lg:px-15 lg:pt-10">
-      {/* "Scroll Edge Effect - Soft": blurred white that fades out downwards */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-white/90 backdrop-blur-[30px]"
-        style={{
-          maskImage: 'linear-gradient(to bottom, #000, transparent)',
-          WebkitMaskImage: 'linear-gradient(to bottom, #000, transparent)',
-        }}
-      />
+      <ScrollEdgeEffect className="absolute inset-x-0 top-0 h-40" />
 
       <nav className="relative mx-auto flex max-w-[1320px] items-center justify-between gap-6 rounded-[100px] bg-white py-4 pr-4 pl-6 shadow-soft lg:pl-10">
         <NavLink to="/" className="shrink-0">
@@ -26,13 +19,18 @@ export default function Navbar() {
           />
         </NavLink>
 
-        <ul className="hidden items-center gap-10 lg:flex xl:gap-20">
+        {/*
+         * Figma spaces the three labels on 177.33 centres — three 97.33 cells 80 apart.
+         * The labels are wider than their cells and overhang symmetrically, so each one
+         * gets a centred, non-wrapping cell rather than being packed by its own width.
+         */}
+        <ul className="hidden items-center gap-10 lg:grid lg:grid-cols-3 lg:gap-20">
           {NAV_LINKS.map((link) => (
-            <li key={link.to}>
+            <li key={link.to} className="flex justify-center lg:w-[97.33px]">
               <NavLink
                 to={link.to}
                 className={({ isActive }) =>
-                  `text-xl leading-[1.4] transition-colors hover:text-brand-red ${
+                  `text-xl leading-[1.4] whitespace-nowrap transition-colors hover:text-brand-red ${
                     isActive ? 'font-semibold' : 'font-normal'
                   }`
                 }
