@@ -87,8 +87,16 @@ export const FOOTER_GROUPS = [
 ]
 
 export const SOCIAL_LINKS = [
-  { label: 'Facebook', icon: '/assets/icon-facebook.svg', href: '#' },
-  { label: 'Instagram', icon: '/assets/icon-instagram.svg', href: '#' },
+  {
+    label: 'Facebook',
+    icon: '/assets/figma/5c123061e989ef51ad620866b56d6b0d63f2dc8c.svg',
+    href: '#',
+  },
+  {
+    label: 'Instagram',
+    icon: '/assets/figma/ec7b502700ce8ac7dfcae9fe51fa39883e998853.svg',
+    href: '#',
+  },
 ]
 
 export const FOOTER_ABOUT = {
