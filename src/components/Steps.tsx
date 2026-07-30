@@ -1,5 +1,4 @@
 import SectionHeader from './SectionHeader'
-import HomeDecor, { STEPS_DECOR, STEPS_OVERLAY } from './HomeDecor'
 import { DOCUMENT_GROUPS, STEP_CARDS } from '../data'
 import { useReveal } from '../hooks/useReveal'
 
@@ -87,9 +86,6 @@ export default function Steps() {
     // Figma: the header sits flush at the section top — the run-up above it belongs to
     // the calendar's tail. 109 of tail here carries the row into the red prize band.
     <section id="steps" className="relative px-4 pt-20 pb-24 lg:px-15 lg:pt-0 lg:pb-[109px]">
-      {/* the wash belongs under every other layer — see Calendar */}
-      <HomeDecor nodes={STEPS_DECOR} variant="wash" className="-z-10" />
-
       <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col gap-10">
         <div ref={head.ref} className={head.cls}>
           <SectionHeader number="02" title="ขั้นตอนสมัครเข้าแข่งขัน" />
@@ -135,9 +131,6 @@ export default function Steps() {
           </article>
         </div>
       </div>
-
-      {/* Figma stacks these over the cards, not behind them */}
-      <HomeDecor nodes={STEPS_OVERLAY} className="z-20" />
     </section>
   )
 }

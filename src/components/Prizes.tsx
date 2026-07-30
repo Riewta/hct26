@@ -1,9 +1,6 @@
 import SectionHeader from './SectionHeader'
-import HomeDecor, { PRIZES_DECOR, PRIZES_OVERLAY } from './HomeDecor'
 import { PRIZES } from '../data'
 import { useReveal } from '../hooks/useReveal'
-
-const band = '/assets/figma/698744474ca70b049053608ab4751a69839434a7.svg'
 
 /** Figma centres these two titles in their column; the outer two sit flush left. */
 const CENTRED = [1, 2]
@@ -25,21 +22,11 @@ export default function Prizes() {
        */
       className="relative bg-brand-red px-4 py-20 lg:mb-[247px] lg:bg-transparent lg:px-15 lg:py-[165.5px]"
     >
-      <HomeDecor nodes={PRIZES_DECOR} className="z-0" />
-
       {/*
-       * The red is not a section fill — it is a single 2213.6 x 1162.5 blob whose wavy
-       * top and bottom edges are the band's edges, hanging 32 above the section and 106
-       * below it. Only from `lg` up: narrower viewports make the section taller than the
-       * blob, so there the flat `bg-brand-red` stands in for it.
+       * The red band is not a section fill — it is the 2213.6 x 1162.5 blob painted in the
+       * page background frame (HomeBackground). Below `lg` those props are hidden and the
+       * section grows taller than the blob, so there the flat `bg-brand-red` stands in.
        */}
-      <img
-        src={band}
-        alt=""
-        aria-hidden
-        className="pointer-events-none absolute top-[calc(50%+37.25px)] left-[calc(50%-0.18px)] hidden h-[1162.509px] w-[2213.647px] max-w-none -translate-x-1/2 -translate-y-1/2 lg:block"
-      />
-
       <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col gap-10">
         <div ref={head.ref} className={head.cls}>
           <SectionHeader
@@ -77,9 +64,6 @@ export default function Prizes() {
           ))}
         </div>
       </div>
-
-      {/* the cheese pile is the last layer in Figma — over the band and into the footer */}
-      <HomeDecor nodes={PRIZES_OVERLAY} className="z-20" />
     </section>
   )
 }

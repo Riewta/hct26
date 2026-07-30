@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import HomeDecor, { HERO_DECOR } from './HomeDecor'
 import { HERO_LINES } from '../data'
 import { useReveal } from '../hooks/useReveal'
 
@@ -67,8 +66,6 @@ export default function Hero() {
     // Figma runs the pasta past every edge of the masthead, so this section must not clip;
     // the 379 tail below the CTA is the run-up to the calendar section.
     <section id="hero" className="relative px-4 pt-32 pb-40 lg:px-15 lg:pt-[183px] lg:pb-[379px]">
-      <HomeDecor nodes={HERO_DECOR} className="z-0" />
-
       <div
         ref={content.ref}
         className={`relative z-10 mx-auto flex w-full max-w-[1200px] flex-col items-center text-center ${content.cls}`}
@@ -103,11 +100,12 @@ export default function Hero() {
 
         <Link
           to="/signin"
-          className="group mt-[38px] flex items-center gap-3 rounded-[100px] bg-brand-red py-4 pr-4 pl-6 text-base leading-[1.4] font-bold text-white transition-opacity hover:opacity-90 sm:gap-5 sm:pr-6 sm:pl-10 sm:text-lg lg:text-2xl"
+          className="mm-press mt-[38px] flex items-center gap-3 rounded-[100px] bg-brand-red py-4 pr-4 pl-6 text-base leading-[1.4] font-bold text-white transition-opacity hover:opacity-90 sm:gap-5 sm:pr-6 sm:pl-10 sm:text-lg lg:text-2xl"
         >
           ลงทะเบียนเข้าร่วมการแข่งขัน
-          {/* the glyph sits inside a 34px cell — Figma insets it rather than scaling it */}
-          <span className="relative block size-[34px] shrink-0 overflow-hidden transition-transform group-hover:translate-x-1 group-hover:-translate-y-1">
+          {/* the glyph sits inside a 34px cell — Figma insets it rather than scaling it. The
+              lean on hover is gated on a fine pointer, since touch fires :hover on tap. */}
+          <span className="mm-arrow-shift relative block size-[34px] shrink-0 overflow-hidden">
             <img
               src={arrowUpRight}
               alt=""

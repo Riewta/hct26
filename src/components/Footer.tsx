@@ -8,7 +8,7 @@ export default function Footer() {
         <div className="flex max-w-[600px] flex-col justify-between gap-8">
           <div className="flex flex-col gap-5">
             <div className="flex flex-wrap items-center gap-3">
-              <Link to="/">
+              <Link to="/" className="mm-press">
                 <img
                   src="/assets/logo-nav.png"
                   alt="BangMod Hackathon 2026"
@@ -56,7 +56,7 @@ export default function Footer() {
                     <Link
                       key={link.label}
                       to={link.to}
-                      className="text-base leading-[1.4] transition-colors hover:text-brand-red"
+                      className="mm-link mm-press inline-block text-base leading-[1.4] hover:text-brand-red"
                     >
                       {link.label}
                     </Link>
@@ -72,9 +72,11 @@ export default function Footer() {
                     <a
                       key={social.label}
                       href={social.href}
-                      className="flex items-center gap-2.5 text-base leading-[1.4]"
+                      className="mm-link mm-press flex items-center gap-2.5 text-base leading-[1.4] hover:text-brand-red"
                     >
-                      <img src={social.icon} alt="" aria-hidden className="size-6" />
+                      {/* the glyph swells slightly with the row so the whole line, not just
+                          the label, acknowledges the hover */}
+                      <img src={social.icon} alt="" aria-hidden className="mm-icon-pop size-6" />
                       {social.label}
                     </a>
                   ))}

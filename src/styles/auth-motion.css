@@ -1,0 +1,313 @@
+/* Auth-flow motion (sign-in → registration morph, wizard steps, pepper spin).
+   Owned by the auth-animation track — keep other global motion in micro-motion.css. */
+
+/*
+ * Curves, not durations, are what make these read as intentional. The stock CSS
+ * easings are too weak, so these are the stronger variants from Emil Kowalski's
+ * design-engineering notes: `--ease-out-auth` for anything entering, `--ease-morph`
+ * for something travelling across the screen, and the Ionic drawer curve for the
+ * registration sheet, which needs to settle like a spring without overshooting
+ * (Apple's default UI spring is critically damped — bounce is reserved for motion
+ * the user's own gesture threw).
+ */
+:root {
+  --ease-out-auth: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-morph: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* ---------------------------------------------------- the pepper ring ---- */
+
+/*
+ * Figma 939:42 ("Pepper") is a frame the designer wrapped around the eight shakers
+ * on the sign-in collage precisely so the ring can turn as one body. The frame's box
+ * is 694.626 x 706.065 at (6.208, 423.513) inside the 694x984 decorative panel, and
+ * its centre sits within ~1px of the mean of the eight shaker centres, so a plain
+ * `transform-origin: 50% 50%` turns the ring about its own axis.
+ *
+ * Constant motion takes `linear` — any easing would betray the loop point. One
+ * revolution per 96s puts the outermost shaker at roughly 23px/s: a lazy turn you
+ * notice only if you look at it, never a spinner. 0deg → 360deg is seamless by
+ * definition, so there is no join to hide.
+ */
+@keyframes auth-pepper-turn {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.auth-pepper-ring {
+  transform-origin: 50% 50%;
+  animation: auth-pepper-turn 96s linear infinite;
+  /* eight large PNGs under one transform — promote the layer once, not per frame */
+  will-change: transform;
+}
+
+/* -------------------------------------------- sign-in → registration ---- */
+
+/*
+ * The morph. Both screens paint the same three brand shapes — #c0563e, #94b45e and
+ * #d79a4e — but sign-in confines them to its 694-wide panel while the registration
+ * gate lets them fill the page. Naming each shape on both screens makes the browser
+ * treat them as one object across the navigation, so pressing "เข้าสู่ระบบด้วย Google"
+ * carries the colour out of the panel and across the viewport instead of cutting.
+ *
+ * Names are matched by fill, not by Figma's layer names, which lie here:
+ * "Background / Green" is filled yellow and "Background / Red" green.
+ *
+ * `@supports` is belt-and-braces — an engine without view transitions ignores both
+ * `view-transition-name` and the pseudo-elements anyway, and react-router only opts
+ * into the API when `document.startViewTransition` exists, so the navigation simply
+ * happens plainly. Nothing here can leave an element stuck or invisible, because
+ * every rule below styles pseudo-elements that exist only mid-transition.
+ */
+@supports (view-transition-name: none) {
+  .auth-block-red {
+    view-transition-name: auth-block-red;
+  }
+
+  .auth-block-green {
+    view-transition-name: auth-block-green;
+  }
+
+  .auth-block-amber {
+    view-transition-name: auth-block-amber;
+  }
+
+  /*
+   * The group carries the travel. It is the one animation here that touches geometry
+   * rather than transform alone, and unavoidably so: the group animation IS the
+   * browser's morph. It runs on the compositor over a snapshot, never over live
+   * layout, so nothing reflows. Every keyframe this file authors is transform and
+   * opacity only.
+   */
+  ::view-transition-group(auth-block-red),
+  ::view-transition-group(auth-block-green),
+  ::view-transition-group(auth-block-amber) {
+    animation-duration: 520ms;
+    animation-timing-function: var(--ease-morph);
+  }
+
+  /*
+   * The two snapshots have very different aspect ratios, so an even crossfade would
+   * show them as two overlapping shapes. Retiring the old one early and bringing the
+   * new one up over the remaining travel keeps it reading as one shape changing
+   * proportion. (Blur, the usual masking trick, is too expensive over fills this
+   * large in Safari.)
+   */
+  ::view-transition-old(auth-block-red),
+  ::view-transition-old(auth-block-green),
+  ::view-transition-old(auth-block-amber) {
+    animation: auth-fade-out 240ms ease-out both;
+  }
+
+  ::view-transition-new(auth-block-red),
+  ::view-transition-new(auth-block-green),
+  ::view-transition-new(auth-block-amber) {
+    animation: auth-fade-in 400ms var(--ease-out-auth) both;
+  }
+
+  /*
+   * The requirements sheet has no counterpart on sign-in, so it is a pure entry: it
+   * rises over the blocks still travelling underneath it. 40px is its own travel
+   * rather than a percentage, because the sheet is 850+ tall and a percentage would
+   * start it below the fold.
+   */
+  .auth-sheet {
+    view-transition-name: auth-sheet;
+  }
+
+  ::view-transition-new(auth-sheet) {
+    animation: auth-sheet-rise 460ms var(--ease-sheet) both;
+  }
+
+  ::view-transition-old(auth-sheet) {
+    animation: auth-fade-out 200ms ease-out both;
+  }
+
+  /* whatever is left over — the sign-in form, the sheet's own copy — just crossfades */
+  ::view-transition-group(root) {
+    animation-duration: 360ms;
+    animation-timing-function: ease-out;
+  }
+}
+
+@keyframes auth-sheet-rise {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes auth-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes auth-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* ------------------------------------------------- wizard step moves ---- */
+
+/*
+ * Between wizard steps the chrome should hold still and only the form should move.
+ * Naming the header, the progress bar and the decoration lifts each out of the root
+ * snapshot so none of them flash; the form body is the only thing that travels.
+ *
+ * Its group animation is switched off (`0s`), which pins the box to the new step's
+ * geometry immediately and leaves the two snapshots to slide past each other on
+ * transform and opacity alone — no animated height, even though the steps differ a
+ * lot in length.
+ *
+ * Direction comes from a `data-wizard-nav` flag on the root element, set by the step
+ * links and by the browser's own back button (see form/wizardNav.ts). Forward reads
+ * leftwards, back reads rightwards; that spatial consistency is what makes the back
+ * button feel like an undo rather than a fresh page.
+ */
+@supports (view-transition-name: none) {
+  .wizard-header {
+    view-transition-name: wizard-header;
+  }
+
+  .wizard-progress {
+    view-transition-name: wizard-progress;
+  }
+
+  .wizard-body {
+    view-transition-name: wizard-body;
+  }
+
+  .wizard-pasta {
+    view-transition-name: wizard-pasta;
+  }
+
+  .wizard-tomatoes {
+    view-transition-name: wizard-tomatoes;
+  }
+
+  ::view-transition-group(wizard-body) {
+    animation-duration: 0s;
+  }
+
+  ::view-transition-group(wizard-progress) {
+    animation-duration: 320ms;
+    animation-timing-function: var(--ease-out-auth);
+  }
+
+  /* the pasta holds its place; only the terms step drops the tomatoes, so they fade */
+  ::view-transition-old(wizard-tomatoes) {
+    animation: auth-fade-out 240ms ease-out both;
+  }
+
+  ::view-transition-new(wizard-tomatoes) {
+    animation: auth-fade-in 320ms var(--ease-out-auth) both;
+  }
+
+  /* forward — the default, so a missing flag still reads correctly */
+  ::view-transition-old(wizard-body) {
+    animation: wizard-exit-back 200ms ease-out both;
+  }
+
+  ::view-transition-new(wizard-body) {
+    animation: wizard-enter-forward 300ms var(--ease-out-auth) both;
+  }
+
+  :root[data-wizard-nav='back'] ::view-transition-old(wizard-body) {
+    animation: wizard-exit-forward 200ms ease-out both;
+  }
+
+  :root[data-wizard-nav='back'] ::view-transition-new(wizard-body) {
+    animation: wizard-enter-back 300ms var(--ease-out-auth) both;
+  }
+}
+
+/*
+ * 3% of the 1040 column is ~31px — enough to read as a direction, short enough that
+ * the eye tracks the copy instead of watching it fly. Exits are shorter than entries
+ * so the incoming step, not the outgoing one, is what the user is looking at.
+ */
+@keyframes wizard-enter-forward {
+  from {
+    opacity: 0;
+    transform: translateX(3%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes wizard-exit-back {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-3%);
+  }
+}
+
+@keyframes wizard-enter-back {
+  from {
+    opacity: 0;
+    transform: translateX(-3%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes wizard-exit-forward {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(3%);
+  }
+}
+
+/* ----------------------------------------------------- reduced motion ---- */
+
+/*
+ * Reduced motion means gentler, not absent: the navigation still crossfades so the
+ * change of screen stays legible, but nothing travels and nothing turns. Last in the
+ * file so it wins on the cascade without needing `!important` for the ring.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .auth-pepper-ring {
+    animation: none;
+  }
+
+  ::view-transition-group(*) {
+    animation-duration: 1ms !important;
+  }
+
+  ::view-transition-old(*) {
+    animation: auth-fade-out 140ms linear both !important;
+  }
+
+  ::view-transition-new(*) {
+    animation: auth-fade-in 140ms linear both !important;
+  }
+}

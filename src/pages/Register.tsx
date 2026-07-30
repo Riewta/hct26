@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import AuthPageShell from '../components/AuthPageShell'
+import { markWizardNav, supportsViewTransitions } from '../components/form/wizardNav'
 import { DOCUMENT_GROUPS } from '../data'
 
 /**
@@ -34,7 +35,11 @@ const REQUIREMENTS = [
 export default function Register() {
   return (
     <AuthPageShell>
-      <div className="mt-8 flex min-h-[850px] flex-1 flex-col items-start gap-8 rounded-t-[32px] bg-white p-6 shadow-soft lg:mt-[66px] lg:p-10">
+      {/*
+       * `auth-sheet` is the view-transition name that makes this card spring up over the
+       * colour blocks as they morph out of the sign-in layout (styles/auth-motion.css).
+       */}
+      <div className="auth-sheet mt-8 flex min-h-[850px] flex-1 flex-col items-start gap-8 rounded-t-[32px] bg-white p-6 shadow-soft lg:mt-[66px] lg:p-10">
         <h1 className="text-3xl leading-[1.4] font-semibold lg:text-[40px]">
           ลงทะเบียนเข้าแข่งขัน
         </h1>
@@ -71,7 +76,9 @@ export default function Register() {
         {/* Figma sets this label in Sukhumvit Set, not Noto */}
         <Link
           to="/register/team"
-          className="flex h-15 w-full items-center justify-center rounded-[20px] bg-brand-red px-6 py-4 font-display text-lg leading-[normal] font-semibold text-white transition-opacity hover:opacity-90 lg:text-xl"
+          viewTransition={supportsViewTransitions}
+          onClick={() => markWizardNav('forward')}
+          className="flex h-15 w-full items-center justify-center rounded-[20px] bg-brand-red px-6 py-4 font-display text-lg leading-[normal] font-semibold text-white transition-[opacity,transform] duration-[160ms] ease-out hover:opacity-90 active:scale-[0.98] motion-reduce:active:scale-100 lg:text-xl"
         >
           ลงทะเบียน
         </Link>

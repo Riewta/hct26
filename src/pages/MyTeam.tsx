@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import GoogleLogo from '../components/GoogleLogo'
 import ScrollEdgeEffect from '../components/ScrollEdgeEffect'
@@ -25,6 +25,27 @@ function isStatus(value: string | null): value is TeamStatus {
   return STATUS_VARIANTS.includes(value as TeamStatus)
 }
 
+/** The indicator is drawn at this width and scaled to each tab, so only transform animates. */
+const BAR_W = 100
+
+/** How long the copy button holds its tick before returning to the copy glyph. */
+const COPIED_MS = 1600
+
+/** No Figma asset for the copied state — the tick is drawn in the tone the labels use. */
+function Tick({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden className={className}>
+      <path
+        d="M4 10.5 8 14.5 16 6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 /** Modal call to action — Figma sets these labels in Sukhumvit Set Semi Bold, not Noto. */
 function ModalButton({
   href,
@@ -40,7 +61,7 @@ function ModalButton({
   return (
     <a
       href={href}
-      className={`flex w-full items-center justify-center gap-4 rounded-[16px] px-4 py-3 font-display text-[20px] leading-normal font-semibold transition-opacity hover:opacity-90 ${className}`}
+      className={`mm-press flex w-full items-center justify-center gap-4 rounded-[16px] px-4 py-3 font-display text-[20px] leading-normal font-semibold transition-opacity hover:opacity-90 ${className}`}
     >
       {icon}
       {children}
@@ -56,8 +77,42 @@ export default function MyTeam() {
   // the advisor tab is the one shown in the document-issue design
   const [active, setActive] = useState(status === 'issue' ? MEMBERS.length - 1 : 0)
   const [modal, setModal] = useState(params.get('modal'))
+  const [copied, setCopied] = useState(false)
 
   const person = MEMBERS[active]
+
+  /*
+   * The selected tab's rule is one element that slides, rather than a border redrawn under
+   * whichever tab is active — a jump between two tabs reads as two separate marks. It is
+   * measured off the live tab (the labels are Thai and every tab is a different width) and
+   * placed with a transform, so nothing but a compositor property changes. The tab list
+   * wraps on narrow screens, hence the y offset as well as the x.
+   */
+  const tabsRef = useRef<HTMLDivElement>(null)
+  const [bar, setBar] = useState<{ x: number; y: number; w: number } | null>(null)
+
+  useLayoutEffect(() => {
+    const list = tabsRef.current
+    if (!list) return
+
+    const measure = () => {
+      const tab = list.children[active] as HTMLElement | undefined
+      if (!tab) return
+      setBar({ x: tab.offsetLeft, y: tab.offsetTop + tab.offsetHeight - 2, w: tab.offsetWidth })
+    }
+
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(list)
+    return () => observer.disconnect()
+  }, [active])
+
+  // the tick is a confirmation, not a mode — it hands the copy glyph back on its own
+  useEffect(() => {
+    if (!copied) return
+    const timer = window.setTimeout(() => setCopied(false), COPIED_MS)
+    return () => window.clearTimeout(timer)
+  }, [copied])
 
   return (
     <div className="relative min-h-dvh overflow-hidden bg-[#fefdfc]">
@@ -69,7 +124,7 @@ export default function MyTeam() {
       {/* Figma 708:2307: a 1440 frame padded 100 either side, 60 down, 40 between the rows */}
       <div className="relative z-20 mx-auto flex w-full max-w-[1440px] flex-col items-center gap-6 px-4 pt-6 pb-16 lg:gap-10 lg:px-25 lg:pt-15">
         <header className="flex w-full items-center justify-between gap-4 rounded-3xl bg-white p-4 shadow-soft lg:p-5">
-          <Link to="/" className="shrink-0">
+          <Link to="/" className="mm-press shrink-0">
             <img
               src={LOGO}
               alt="BangMod Hackathon 2026"
@@ -78,7 +133,7 @@ export default function MyTeam() {
           </Link>
           <button
             type="button"
-            className="flex shrink-0 items-center justify-center gap-4 rounded-[12px] border border-[#dcdcdc] py-3 pr-4 pl-5 transition-colors hover:border-brand-red"
+            className="mm-press flex shrink-0 items-center justify-center gap-4 rounded-[12px] border border-[#dcdcdc] py-3 pr-4 pl-5 transition-colors hover:border-brand-red"
           >
             <GoogleLogo className="size-[24px]" />
             <span className="hidden text-[20px] leading-[1.4] sm:inline">ชื่อบัญชีผู้ใช้</span>
@@ -98,11 +153,16 @@ export default function MyTeam() {
                   <span>{TEAM.code}</span>
                   <button
                     type="button"
-                    onClick={() => navigator.clipboard?.writeText(TEAM.code)}
-                    aria-label="คัดลอกรหัสทีม"
-                    className="transition-opacity hover:opacity-60"
+                    onClick={() => {
+                      navigator.clipboard?.writeText(TEAM.code)
+                      setCopied(true)
+                    }}
+                    aria-label={copied ? 'คัดลอกรหัสทีมแล้ว' : 'คัดลอกรหัสทีม'}
+                    data-on={copied}
+                    className="mm-swap mm-press-icon size-[20px] transition-opacity hover:opacity-60"
                   >
-                    <img src={COPY} alt="" aria-hidden className="size-[20px]" />
+                    <img src={COPY} alt="" aria-hidden className="mm-swap-off size-[20px]" />
+                    <Tick className="mm-swap-on size-[20px] text-brand-green" />
                   </button>
                 </p>
                 <p className="flex flex-wrap items-start gap-[12px] text-[18px] leading-[1.4]">
@@ -112,7 +172,11 @@ export default function MyTeam() {
               </div>
             </div>
 
-            <div role="tablist" className="flex flex-wrap items-center gap-2">
+            <div
+              ref={tabsRef}
+              role="tablist"
+              className="relative flex flex-wrap items-center gap-2"
+            >
               {MEMBERS.map((member, i) => {
                 const on = i === active
                 return (
@@ -122,14 +186,8 @@ export default function MyTeam() {
                     role="tab"
                     aria-selected={on}
                     onClick={() => setActive(i)}
-                    /*
-                     * Figma draws the selected tab's 2px rule as an inside stroke, so it must
-                     * not add to the 43px tab height — hence the absolutely placed bar.
-                     */
-                    className={`relative flex shrink-0 items-start gap-2 px-3 py-2 text-[18px] leading-normal transition-colors ${
-                      on
-                        ? 'font-semibold after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-brand-red'
-                        : 'rounded-2xl bg-white text-gray-2'
+                    className={`mm-press flex shrink-0 items-start gap-2 px-3 py-2 text-[18px] leading-normal transition-colors ${
+                      on ? 'font-semibold' : 'rounded-2xl bg-white text-gray-2'
                     }`}
                   >
                     <img
@@ -142,6 +200,21 @@ export default function MyTeam() {
                   </button>
                 )
               })}
+
+              {/*
+               * Figma draws the selected tab's 2px rule as an inside stroke, so it must not
+               * add to the 43px tab height — the bar is placed over the tab, not under it.
+               */}
+              {bar && (
+                <span
+                  aria-hidden
+                  className="mm-indicator pointer-events-none absolute top-0 left-0 h-0.5 origin-left bg-brand-red"
+                  style={{
+                    width: BAR_W,
+                    transform: `translate(${bar.x}px, ${bar.y}px) scaleX(${bar.w / BAR_W})`,
+                  }}
+                />
+              )}
             </div>
 
             <PersonDetails person={person} />

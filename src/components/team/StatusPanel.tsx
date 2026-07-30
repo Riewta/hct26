@@ -133,9 +133,9 @@ function Step({ step }: { step: StatusStep }) {
                   key={social.label}
                   href="#"
                   aria-label={social.label}
-                  className="flex min-w-0 flex-1 items-center justify-center rounded-[10px] bg-[#f6f6f6] px-[16px] py-[6px] transition-colors hover:bg-[#ececec]"
+                  className="mm-press flex min-w-0 flex-1 items-center justify-center rounded-[10px] bg-[#f6f6f6] px-[16px] py-[6px] transition-colors hover:bg-[#ececec]"
                 >
-                  <img src={social.icon} alt="" aria-hidden className="size-[24px]" />
+                  <img src={social.icon} alt="" aria-hidden className="mm-icon-pop size-[24px]" />
                 </a>
               ))}
             </div>
@@ -205,7 +205,7 @@ export default function StatusPanel({
               </p>
               <button
                 type="button"
-                className="shrink-0 rounded-[10px] bg-[#f6f6f6] px-[20px] py-[8px] text-[14px] leading-normal transition-colors hover:bg-[#ececec]"
+                className="mm-press shrink-0 rounded-[10px] bg-[#f6f6f6] px-[20px] py-[8px] text-[14px] leading-normal transition-colors hover:bg-[#ececec]"
               >
                 {DISCORD_CARD.action}
               </button>

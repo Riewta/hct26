@@ -45,7 +45,7 @@ export default function PastEventCard({ event }: { event: PastEvent }) {
       <ScrollEdgeEffect
         tone="dark"
         flip
-        blur={event.edgeBlur}
+        plateBlur={event.edgeBlur}
         className="absolute inset-x-0 bottom-0 h-1/2 lg:h-[400px]"
       />
 

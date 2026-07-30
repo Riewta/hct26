@@ -28,9 +28,15 @@ const TOMATO = `${F}a3ce089ae8fc11332c3cca7006e6af2737b4b96a.png`
 
 type Box = { left: number; top: number; width: number; height: number }
 
-/** A colour block: Figma nests the artwork at an inset, already folded into these values. */
-function Block({ src, ...box }: Box & { src: string }) {
-  return <img src={src} alt="" className="absolute max-w-none" style={box} />
+/**
+ * A colour block: Figma nests the artwork at an inset, already folded into these values.
+ *
+ * `className` carries the `auth-block-*` view-transition names from auth-motion.css. The
+ * same three fills appear on sign-in and on the registration gate at wildly different
+ * geometry, and naming them is what lets the browser morph one layout into the other.
+ */
+function Block({ src, className = '', ...box }: Box & { src: string; className?: string }) {
+  return <img src={src} alt="" className={`absolute max-w-none ${className}`} style={box} />
 }
 
 type PieceProps = Box & {
@@ -109,11 +115,26 @@ const SIGN_IN_EGGS: Omit<PieceProps, 'src'>[] = [
   },
 ]
 
+/**
+ * Figma 939:42, the frame named "Pepper": the designer grouped these eight shakers so
+ * the ring could be turned as one body, and its box is 694.626 x 706.065 at
+ * (6.208, 423.513) in the panel. `SIGN_IN_SHAKERS` below is therefore stated relative
+ * to that box rather than to the panel, and `SHAKER_RING` re-anchors it.
+ *
+ * Two consequences of taking the frame at face value:
+ *  - an earlier transcription carried a ninth shaker, a second pepper 16.8 left of the
+ *    one at (319.032, 72.597); the regrouped frame has only eight, and its width is
+ *    exactly 694.626 rather than the 711.43 that duplicate implied, so it is gone.
+ *  - the eight sit at 45deg intervals, and the mean of their centres lands within ~1px
+ *    of the box centre, so the ring turns about `50% 50%` without a nudge.
+ */
+const SHAKER_RING: Box = { left: 6.208, top: 423.513, width: 694.626, height: 706.065 }
+
 const SIGN_IN_SHAKERS: PieceProps[] = [
   {
     src: SALT,
-    left: 193.64,
-    top: 454.39,
+    left: 187.432,
+    top: 30.877,
     width: 375.692,
     height: 303.096,
     w: 332,
@@ -122,18 +143,8 @@ const SIGN_IN_SHAKERS: PieceProps[] = [
   },
   {
     src: PEPPER,
-    left: 342.04,
-    top: 499.89,
-    width: 375.596,
-    height: 405.245,
-    w: 330.738,
-    h: 235.191,
-    rotate: 57.67,
-  },
-  {
-    src: PEPPER,
-    left: 325.24,
-    top: 496.11,
+    left: 319.032,
+    top: 72.597,
     width: 375.596,
     height: 405.245,
     w: 330.738,
@@ -142,8 +153,8 @@ const SIGN_IN_SHAKERS: PieceProps[] = [
   },
   {
     src: POWDER,
-    left: 368.45,
-    top: 630.72,
+    left: 362.242,
+    top: 207.207,
     width: 304.291,
     height: 376.887,
     w: 333,
@@ -152,8 +163,8 @@ const SIGN_IN_SHAKERS: PieceProps[] = [
   },
   {
     src: SALT,
-    left: 255.71,
-    top: 753.98,
+    left: 249.502,
+    top: 330.467,
     width: 405.245,
     height: 375.596,
     w: 330.738,
@@ -162,8 +173,8 @@ const SIGN_IN_SHAKERS: PieceProps[] = [
   },
   {
     src: PEPPER,
-    left: 118.04,
-    top: 796.08,
+    left: 111.832,
+    top: 372.567,
     width: 374.497,
     height: 301.901,
     w: 331,
@@ -172,8 +183,8 @@ const SIGN_IN_SHAKERS: PieceProps[] = [
   },
   {
     src: POWDER,
-    left: 6.21,
-    top: 657.28,
+    left: 0,
+    top: 233.767,
     width: 378.434,
     height: 408.307,
     w: 333.237,
@@ -182,8 +193,8 @@ const SIGN_IN_SHAKERS: PieceProps[] = [
   },
   {
     src: SALT,
-    left: 46.42,
-    top: 546.92,
+    left: 40.212,
+    top: 123.407,
     width: 301.901,
     height: 374.497,
     w: 331,
@@ -192,8 +203,8 @@ const SIGN_IN_SHAKERS: PieceProps[] = [
   },
   {
     src: PEPPER,
-    left: 47.39,
-    top: 423.51,
+    left: 41.182,
+    top: 0,
     width: 405.245,
     height: 375.596,
     w: 330.738,
@@ -211,6 +222,7 @@ export default function AuthBackdrop() {
     <div aria-hidden className="pointer-events-none absolute inset-0">
       <Block
         src={`${F}fa0b9f2f4fa7dcf077181151e86e3aecdf7a85a3.svg`}
+        className="auth-block-amber"
         left={0}
         top={447.355}
         width={944}
@@ -218,6 +230,7 @@ export default function AuthBackdrop() {
       />
       <Block
         src={`${F}81ab6df7b9ffc666c9e4e34fea15824767b81f3d.svg`}
+        className="auth-block-green"
         left={438}
         top={14}
         width={390}
@@ -231,6 +244,7 @@ export default function AuthBackdrop() {
       {/* painted after the eggs so it crops them, exactly as the design stacks it */}
       <Block
         src={`${F}239721762cc0b1a7e9b0ba787ef6c2010c4bc928.svg`}
+        className="auth-block-red"
         left={0}
         top={14}
         width={416}
@@ -244,18 +258,28 @@ export default function AuthBackdrop() {
         style={{ left: -125, top: -59, width: 654, height: 465 }}
       />
 
-      {SIGN_IN_SHAKERS.map((item, i) => (
-        <Piece key={i} {...item} />
-      ))}
+      {/* one box, one transform — see `.auth-pepper-ring` in styles/auth-motion.css */}
+      <div className="auth-pepper-ring absolute" style={SHAKER_RING}>
+        {SIGN_IN_SHAKERS.map((item, i) => (
+          <Piece key={i} {...item} />
+        ))}
+      </div>
     </div>
   )
 }
 
 /* ------------------------------------------------------ colour blocks ---- */
 
-const BRAND_BLOCKS: (Box & { src: string })[] = [
+/**
+ * `className` pairs each shape with its sign-in counterpart by fill — #d79a4e, #94b45e,
+ * #c0563e — so pressing Google on sign-in morphs one layout into the other. The muted
+ * set below reuses the same two names at the same geometry, which makes success → error
+ * a recolour of the same shapes rather than a cut.
+ */
+const BRAND_BLOCKS: (Box & { src: string; className: string })[] = [
   {
     src: `${F}13950dcba78b5cdd3af1d3b143472aa8451a23b9.svg`,
+    className: 'auth-block-amber',
     left: -134,
     top: 461.355,
     width: 1890,
@@ -263,6 +287,7 @@ const BRAND_BLOCKS: (Box & { src: string })[] = [
   },
   {
     src: `${F}218e9e4111038850e7314b82f297b1398ae7c09d.svg`,
+    className: 'auth-block-green',
     left: 743,
     top: -413,
     width: 781,
@@ -270,6 +295,7 @@ const BRAND_BLOCKS: (Box & { src: string })[] = [
   },
   {
     src: `${F}d1d61faf1bf4dc9ef558000710a149ea1015f6a8.svg`,
+    className: 'auth-block-red',
     left: -134,
     top: -401,
     width: 833,
@@ -278,9 +304,10 @@ const BRAND_BLOCKS: (Box & { src: string })[] = [
 ]
 
 /** The error screen desaturates the same shapes and drops the green block entirely. */
-const MUTED_BLOCKS: (Box & { src: string })[] = [
+const MUTED_BLOCKS: (Box & { src: string; className: string })[] = [
   {
     src: `${F}5fc0b14e16e9ac67a144b0e553190de7e576055d.svg`,
+    className: 'auth-block-amber',
     left: -134,
     top: 461.355,
     width: 1890,
@@ -288,6 +315,7 @@ const MUTED_BLOCKS: (Box & { src: string })[] = [
   },
   {
     src: `${F}a920a391e664479edabe4c7b2b4545abc7f8c022.svg`,
+    className: 'auth-block-red',
     left: -134,
     top: -401,
     width: 833,
@@ -460,8 +488,9 @@ export function WizardBackdrop({ withTomatoes = true }: { withTomatoes?: boolean
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
       <div className="absolute inset-y-0 left-1/2 w-[1440px] -translate-x-1/2">
+        {/* named so the decoration is lifted out of the step-to-step crossfade and holds still */}
         <div
-          className="absolute"
+          className="wizard-pasta absolute"
           style={{ left: 904.91, top: -305.14, width: 773.059, height: 696.332 }}
         >
           {WIZARD_PASTA.map((piece, i) => (
@@ -471,7 +500,7 @@ export function WizardBackdrop({ withTomatoes = true }: { withTomatoes?: boolean
 
         {withTomatoes && (
           <div
-            className="absolute"
+            className="wizard-tomatoes absolute"
             style={{ left: -129.22, bottom: -70.24, width: 470.728, height: 402.236 }}
           >
             {WIZARD_TOMATOES.map((piece, i) => (

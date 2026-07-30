@@ -100,9 +100,14 @@ export default function PersonDetails({ person }: { person: Person }) {
             </p>
             <a
               href="#"
-              className="flex min-w-0 flex-1 items-center gap-[8px] transition-opacity hover:opacity-70"
+              className="mm-press flex min-w-0 flex-1 items-center gap-[8px] transition-opacity hover:opacity-70"
             >
-              <img src={ATTACHMENT} alt="" aria-hidden className="size-[24px] shrink-0" />
+              <img
+                src={ATTACHMENT}
+                alt=""
+                aria-hidden
+                className="mm-icon-pop size-[24px] shrink-0"
+              />
               <span className="text-[16px] leading-[1.6]">{doc.file}</span>
               <span className="text-[16px] leading-[1.6] font-light text-gray-2">{doc.size}</span>
             </a>

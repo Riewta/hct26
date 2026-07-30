@@ -27,9 +27,10 @@ export default function ScopeSection() {
             </div>
             <a
               href="#"
-              className="flex shrink-0 items-center gap-5 self-start rounded-[100px] bg-brand-red py-4 pr-9 pl-6 text-white transition-opacity hover:opacity-90 lg:self-auto"
+              className="mm-press flex shrink-0 items-center gap-5 self-start rounded-[100px] bg-brand-red py-4 pr-9 pl-6 text-white transition-opacity hover:opacity-90 lg:self-auto"
             >
-              <span className="relative block size-[34px] shrink-0">
+              {/* a download arrow leans the way it points on hover */}
+              <span className="mm-arrow-down relative block size-[34px] shrink-0">
                 <img
                   src="/assets/figma/115b31f82f018f10c7430912ba6f548f7d8eab15.svg"
                   alt=""
@@ -48,7 +49,9 @@ export default function ScopeSection() {
           {SCOPE_CARDS.map((card) => (
             <article
               key={card.title}
-              className="relative overflow-hidden rounded-2xl bg-white shadow-soft lg:h-[451px]"
+              /* these carry a "go" arrow in their footer, so they read as reachable —
+                 the lift is what confirms it before anything is wired up */
+              className="mm-lift relative overflow-hidden rounded-2xl bg-white shadow-soft lg:h-[451px]"
             >
               <ScopeCardArt items={card.art} outlines={card.outlines} />
               {/* Figma reserves 201 above the folder for the topic's doodle band */}

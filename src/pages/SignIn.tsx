@@ -1,6 +1,7 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import AuthBackdrop from '../components/AuthBackdrop'
 import GoogleLogo from '../components/GoogleLogo'
+import { supportsViewTransitions } from '../components/form/wizardNav'
 
 /**
  * Figma 708:1205. A 1440x1024 row: 20 of padding, an 80 gap, and a 694x984 decorative
@@ -9,6 +10,8 @@ import GoogleLogo from '../components/GoogleLogo'
  * headings and the button label spell it out.
  */
 export default function SignIn() {
+  const navigate = useNavigate()
+
   return (
     <div className="relative min-h-dvh overflow-hidden bg-white">
       <div className="flex min-h-dvh flex-col items-center gap-10 p-5 lg:flex-row lg:gap-20">
@@ -42,10 +45,20 @@ export default function SignIn() {
               </p>
             </div>
 
-            {/* Figma sets this one label in Sukhumvit Set, not Noto — hence font-display */}
+            {/*
+             * Figma sets this one label in Sukhumvit Set, not Noto — hence font-display.
+             *
+             * The navigation is the trigger for the whole auth morph: `viewTransition`
+             * hands react-router the go-ahead to wrap it in `document.startViewTransition`,
+             * and the `auth-block-*` names shared by AuthBackdrop and ColourBlockBackdrop
+             * are what turn the sign-in panel's colour blocks into the registration page's.
+             * Passing the detected flag rather than a bare `true` keeps the fallback
+             * explicit: without support this is an ordinary route change.
+             */}
             <button
               type="button"
-              className="flex h-15 w-full items-center justify-center gap-5 rounded-[20px] bg-[#f6f6f6] px-6 py-4 font-display text-lg leading-[normal] font-semibold transition-colors hover:bg-[#ececec] lg:text-xl"
+              onClick={() => navigate('/register', { viewTransition: supportsViewTransitions })}
+              className="flex h-15 w-full items-center justify-center gap-5 rounded-[20px] bg-[#f6f6f6] px-6 py-4 font-display text-lg leading-[normal] font-semibold transition-[background-color,transform] duration-[160ms] ease-out hover:bg-[#ececec] active:scale-[0.98] motion-reduce:active:scale-100 lg:text-xl"
             >
               <GoogleLogo />
               เข้าสู่ระบบด้วย Google

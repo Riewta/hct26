@@ -1,5 +1,4 @@
 import SectionHeader from './SectionHeader'
-import HomeDecor, { CALENDAR_DECOR } from './HomeDecor'
 import { TIMELINE_HIGHLIGHTS, TIMELINE_STEPS } from '../data'
 import { useReveal } from '../hooks/useReveal'
 
@@ -36,10 +35,6 @@ export default function Calendar() {
       id="calendar"
       className="relative px-4 pt-20 pb-24 lg:px-15 lg:pt-[88.5px] lg:pb-[451.5px]"
     >
-      {/* below every positioned layer, so the pasta and the cards both sit on top of the
-          wash — the order Figma stacks them in */}
-      <HomeDecor nodes={CALENDAR_DECOR} variant="wash" className="-z-10" />
-
       <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col gap-10">
         <div ref={head.ref} className={head.cls}>
           <SectionHeader number="01" title="ปฏิทินการแข่งขัน" />

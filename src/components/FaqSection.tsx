@@ -9,7 +9,7 @@ import { useReveal } from '../hooks/useReveal'
  */
 function ToggleIcon({ open }: { open: boolean }) {
   return (
-    <span aria-hidden className="relative block size-8 shrink-0">
+    <span aria-hidden className="mm-press-child relative block size-8 shrink-0">
       <img
         src="/assets/figma/0e681a2a1d4944287c14f80f1e46ef1bd044ab87.svg"
         alt=""
@@ -18,7 +18,8 @@ function ToggleIcon({ open }: { open: boolean }) {
       <img
         src="/assets/figma/0e681a2a1d4944287c14f80f1e46ef1bd044ab87.svg"
         alt=""
-        className={`absolute inset-0 size-full rotate-90 transition-opacity ${open ? 'opacity-0' : 'opacity-100'}`}
+        data-open={open}
+        className="mm-toggle-bar absolute inset-0 size-full"
       />
     </span>
   )
@@ -67,7 +68,7 @@ export default function FaqSection() {
                 {i > 0 && (
                   <div role="presentation" className="h-0 border-t-[0.5px] border-brand-yellow" />
                 )}
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col">
                   <dt>
                     <button
                       type="button"
@@ -85,7 +86,15 @@ export default function FaqSection() {
                       <ToggleIcon open={open} />
                     </button>
                   </dt>
-                  {open && <dd className="text-lg leading-[1.5] lg:text-2xl">{faq.a}</dd>}
+                  {/*
+                   * The answer stays mounted and its grid row collapses to 0fr, so closing
+                   * animates as well as opening. The 16 gap Figma puts between question and
+                   * answer lives inside the clipped row as padding — as a flex gap it would
+                   * survive the collapse and leave a hole under a closed question.
+                   */}
+                  <dd className={`mm-collapse ${open ? 'is-open' : ''}`}>
+                    <div className="pt-4 text-lg leading-[1.5] lg:text-2xl">{faq.a}</div>
+                  </dd>
                 </div>
               </div>
             )

@@ -1,13 +1,17 @@
 @import 'tailwindcss';
+@import './styles/auth-motion.css';
+@import './styles/micro-motion.css';
+@import './styles/pasta-motion.css';
 
 @theme {
   --font-thai: 'Noto Sans Thai', sans-serif;
   /*
-   * Figma sets a few controls (the Google sign-in button, some numerals) in Sukhumvit Set.
-   * It is an Apple system face with no webfont, so it resolves natively on macOS/iOS and
-   * falls back to Noto Sans Thai elsewhere — matching metrics as closely as is available.
+   * Figma sets a few controls (the Google sign-in button, some numerals) in Sukhumvit Set,
+   * an Apple system face with no webfont. Per the project's decision every face is
+   * Noto Sans Thai, so `display` is an alias rather than a second stack — keeping the token
+   * means the Figma-faithful call sites still read as "the display face".
    */
-  --font-display: 'Sukhumvit Set', 'Noto Sans Thai', sans-serif;
+  --font-display: 'Noto Sans Thai', sans-serif;
 
   /* Figma styles: Red / Yellow / Black / Gray 01 / Gray 02 */
   --color-brand-red: #c0563e;

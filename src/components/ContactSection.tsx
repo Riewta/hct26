@@ -60,10 +60,10 @@ export default function ContactSection() {
             <a
               key={channel.label}
               href={channel.href}
-              className="flex items-center gap-4 transition-opacity hover:opacity-80"
+              className="mm-press flex items-center gap-4 transition-opacity hover:opacity-80"
             >
               {/* Figma pads each glyph inside an 80 box, so the label always lands at 96 */}
-              <span className="flex size-16 shrink-0 items-center justify-center rounded-xl lg:size-20">
+              <span className="mm-icon-pop flex size-16 shrink-0 items-center justify-center rounded-xl lg:size-20">
                 <span
                   className="relative block shrink-0"
                   style={{ width: channel.size, height: channel.size }}

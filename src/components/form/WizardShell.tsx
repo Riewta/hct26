@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import GoogleLogo from '../GoogleLogo'
 import { WizardBackdrop } from '../AuthBackdrop'
 import ScrollEdgeEffect from '../ScrollEdgeEffect'
+import { markWizardNav, supportsViewTransitions } from './wizardNav'
 
 export const TOTAL_STEPS = 5
 
@@ -22,12 +23,20 @@ export default function WizardShell({
   step,
   children,
   actions,
+  overlay,
   withTomatoes = true,
   blurBehindContent = false,
 }: {
   step: number
   children: ReactNode
   actions: ReactNode
+  /**
+   * Viewport-fixed layers — currently just the terms step's policy modal. They cannot
+   * live inside `children`, because the `view-transition-name` on the body wrapper makes
+   * that wrapper a containing block for fixed descendants, which would shrink a
+   * `fixed inset-0` scrim down to the form column.
+   */
+  overlay?: ReactNode
   /** The terms step drops the tomato cluster. */
   withTomatoes?: boolean
   /**
@@ -44,7 +53,12 @@ export default function WizardShell({
       <WizardBackdrop withTomatoes={withTomatoes} />
 
       <div className="relative z-10 mx-auto flex w-full max-w-[1040px] flex-1 flex-col gap-4 px-4 py-8 lg:gap-10 lg:px-0 lg:pt-15 lg:pb-0">
-        <header className="flex items-center justify-between gap-4 rounded-[24px] bg-white p-4 shadow-soft lg:p-5">
+        {/*
+         * `wizard-header` / `wizard-progress` / `wizard-body` are view-transition names
+         * (styles/auth-motion.css). Naming the chrome lifts it out of the page-level
+         * crossfade so it holds perfectly still between steps and only the form travels.
+         */}
+        <header className="wizard-header flex items-center justify-between gap-4 rounded-[24px] bg-white p-4 shadow-soft lg:p-5">
           <Link to="/">
             <img
               src="/assets/figma/95f39e217dc710a779c3c0b6cf30b3a377d857f5.png"
@@ -93,7 +107,7 @@ export default function WizardShell({
             </div>
 
             <div
-              className="flex h-2 gap-1 overflow-hidden rounded-[100px]"
+              className="wizard-progress flex h-2 gap-1 overflow-hidden rounded-[100px]"
               role="progressbar"
               aria-valuenow={step}
               aria-valuemin={1}
@@ -108,7 +122,7 @@ export default function WizardShell({
               ))}
             </div>
 
-            {children}
+            <div className="wizard-body flex flex-1 flex-col">{children}</div>
           </div>
 
           <div className="mt-5 -mx-6 flex items-center justify-between gap-4 rounded-b-[24px] bg-white p-4 lg:-mx-10 lg:p-5">
@@ -120,17 +134,28 @@ export default function WizardShell({
       <ScrollEdgeEffect
         className={`fixed inset-x-0 top-0 h-[160px] ${blurBehindContent ? 'z-0' : 'z-30'}`}
       />
+
+      {overlay}
     </div>
   )
 }
 
-/** Figma's step buttons: rounded-12, a 12 gap and asymmetric padding around the icon. */
+/**
+ * Figma's step buttons: rounded-12, a 12 gap and asymmetric padding around the icon.
+ * The `active:scale-[0.97]` is not from Figma — a pressable control has to confirm it
+ * heard the press, and 160ms is the window where that still reads as instant.
+ */
 const STEP_BUTTON =
-  'flex items-center justify-center gap-3 rounded-[12px] bg-brand-red py-4 text-lg leading-[1.4] font-medium text-white transition-opacity hover:opacity-90 lg:text-xl'
+  'flex items-center justify-center gap-3 rounded-[12px] bg-brand-red py-4 text-lg leading-[1.4] font-medium text-white transition-[opacity,transform] duration-[160ms] ease-out hover:opacity-90 active:scale-[0.97] motion-reduce:active:scale-100 lg:text-xl'
 
 export function BackButton({ to }: { to: string }) {
   return (
-    <Link to={to} className={`${STEP_BUTTON} pr-6 pl-4`}>
+    <Link
+      to={to}
+      viewTransition={supportsViewTransitions}
+      onClick={() => markWizardNav('back')}
+      className={`${STEP_BUTTON} pr-6 pl-4`}
+    >
       <img
         src="/assets/figma/41418d29fd1f773c0f14bc317b19bd65b6f49ee8.svg"
         alt=""
@@ -144,7 +169,12 @@ export function BackButton({ to }: { to: string }) {
 
 export function NextButton({ to, label = 'ถัดไป' }: { to: string; label?: string }) {
   return (
-    <Link to={to} className={`${STEP_BUTTON} ml-auto pr-4 pl-6`}>
+    <Link
+      to={to}
+      viewTransition={supportsViewTransitions}
+      onClick={() => markWizardNav('forward')}
+      className={`${STEP_BUTTON} ml-auto pr-4 pl-6`}
+    >
       {label}
       <img
         src="/assets/figma/a275512325b630305418a611fed5319ba90acfc8.svg"
@@ -159,7 +189,12 @@ export function NextButton({ to, label = 'ถัดไป' }: { to: string; labe
 /** The terms step's submit: same pill, no icon, so the padding is symmetric. */
 export function SubmitButton({ to, label }: { to: string; label: string }) {
   return (
-    <Link to={to} className={`${STEP_BUTTON} ml-auto px-6`}>
+    <Link
+      to={to}
+      viewTransition={supportsViewTransitions}
+      onClick={() => markWizardNav('forward')}
+      className={`${STEP_BUTTON} ml-auto px-6`}
+    >
       {label}
     </Link>
   )

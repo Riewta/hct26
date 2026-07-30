@@ -1,7 +1,10 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { PolicyBlock, PolicyDocument } from '../privacyPolicy'
 
 const ARROW_DOWN = '/assets/figma/b5fa6d1d1c4352d0d01420816b8777fe81ff5920.svg'
+
+/** Matches `--mm-base` in micro-motion.css — how long the sheet needs to get out. */
+const EXIT_MS = 220
 
 function Block({ block }: { block: PolicyBlock }) {
   if (typeof block === 'string') {
@@ -47,6 +50,33 @@ export default function PolicyModal({
 }) {
   const bodyRef = useRef<HTMLDivElement>(null)
 
+  /*
+   * The sheet has to outlive `document` by one exit animation, so the modal keeps its own
+   * mount flag and renders the last document it was given while it is leaving. `state`
+   * flips a frame after mount (and back before unmount) — the transition needs a painted
+   * start value, which is what the extra frame buys.
+   */
+  const shownRef = useRef<PolicyDocument | null>(null)
+  if (doc) shownRef.current = doc
+  const shown = shownRef.current
+
+  const [mounted, setMounted] = useState(false)
+  const [state, setState] = useState<'open' | 'closed'>('closed')
+
+  useEffect(() => {
+    if (doc) {
+      setMounted(true)
+      const frame = requestAnimationFrame(() => {
+        bodyRef.current?.scrollTo({ top: 0 })
+        setState('open')
+      })
+      return () => cancelAnimationFrame(frame)
+    }
+    setState('closed')
+    const timer = window.setTimeout(() => setMounted(false), EXIT_MS)
+    return () => window.clearTimeout(timer)
+  }, [doc])
+
   // close on Escape and lock background scroll while open
   useEffect(() => {
     if (!doc) return
@@ -56,34 +86,35 @@ export default function PolicyModal({
     window.document.addEventListener('keydown', onKey)
     const prev = window.document.body.style.overflow
     window.document.body.style.overflow = 'hidden'
-    bodyRef.current?.scrollTo({ top: 0 })
     return () => {
       window.document.removeEventListener('keydown', onKey)
       window.document.body.style.overflow = prev
     }
   }, [doc, onDecline])
 
-  if (!doc) return null
+  if (!mounted || !shown) return null
 
   return (
     /* Figma overlays every dialog on a light grey scrim that blurs the page behind it */
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(194,194,194,0.3)] p-4 backdrop-blur-[5px] lg:p-25"
+      data-state={state}
+      className="mm-scrim fixed inset-0 z-50 flex items-center justify-center bg-[rgba(194,194,194,0.3)] p-4 backdrop-blur-[5px] lg:p-25"
       onClick={onDecline}
     >
       {/* Figma 708:2239 — a 1000x823 sheet, 24 of padding, 32 between header, body and footer */}
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={doc.title}
+        aria-label={shown.title}
+        data-state={state}
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-full w-full max-w-[1000px] flex-col gap-8 rounded-[32px] border border-[#dcdcdc] bg-white p-6 lg:h-[823px]"
+        className="mm-sheet flex max-h-full w-full max-w-[1000px] flex-col gap-8 rounded-[32px] border border-[#dcdcdc] bg-white p-6 lg:h-[823px]"
       >
         <header className="flex w-full shrink-0 items-center gap-4">
-          <img src={doc.icon} alt="" aria-hidden className="size-[40px] shrink-0" />
+          <img src={shown.icon} alt="" aria-hidden className="size-[40px] shrink-0" />
           <div className="flex min-w-0 flex-1 flex-col items-start justify-center">
-            <p className="text-[28px] leading-[1.4] font-medium">{doc.title}</p>
-            <p className="text-[18px] leading-normal text-gray-1">{doc.subtitle}</p>
+            <p className="text-[28px] leading-[1.4] font-medium">{shown.title}</p>
+            <p className="text-[18px] leading-normal text-gray-1">{shown.subtitle}</p>
           </div>
         </header>
 
@@ -91,8 +122,8 @@ export default function PolicyModal({
           ref={bodyRef}
           className="flex min-h-0 w-full flex-1 flex-col items-start gap-6 overflow-y-auto pr-2"
         >
-          {doc.effective && <p className="w-full text-[20px] leading-[1.4]">{doc.effective}</p>}
-          {doc.sections.map((section) => (
+          {shown.effective && <p className="w-full text-[20px] leading-[1.4]">{shown.effective}</p>}
+          {shown.sections.map((section) => (
             <section key={section.title} className="flex w-full flex-col items-start gap-4">
               <h3 className="w-full text-[24px] leading-[1.4]">{section.title}</h3>
               {section.body.map((block, i) => (
@@ -103,12 +134,12 @@ export default function PolicyModal({
         </div>
 
         <footer className="flex w-full shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          {doc.downloadable ? (
+          {shown.downloadable ? (
             <button
               type="button"
-              className="flex shrink-0 items-center justify-center gap-[12px] rounded-[12px] bg-[#efefef] py-3 pr-6 pl-4 text-[20px] leading-[1.4] transition-colors hover:bg-[#e2e2e2]"
+              className="mm-press flex shrink-0 items-center justify-center gap-[12px] rounded-[12px] bg-[#efefef] py-3 pr-6 pl-4 text-[20px] leading-[1.4] transition-colors hover:bg-[#e2e2e2]"
             >
-              <span className="relative block size-[24px] shrink-0 overflow-clip">
+              <span className="mm-icon-pop relative block size-[24px] shrink-0 overflow-clip">
                 <img
                   src={ARROW_DOWN}
                   alt=""
@@ -127,14 +158,14 @@ export default function PolicyModal({
             <button
               type="button"
               onClick={onDecline}
-              className="rounded-[12px] bg-[#efefef] px-6 py-3 text-[20px] leading-[1.4] transition-colors hover:bg-[#e2e2e2]"
+              className="mm-press rounded-[12px] bg-[#efefef] px-6 py-3 text-[20px] leading-[1.4] transition-colors hover:bg-[#e2e2e2]"
             >
               ไม่ยอมรับ
             </button>
             <button
               type="button"
               onClick={onAccept}
-              className="rounded-[12px] bg-brand-red px-6 py-3 text-[20px] leading-[1.4] text-white transition-opacity hover:opacity-90"
+              className="mm-press rounded-[12px] bg-brand-red px-6 py-3 text-[20px] leading-[1.4] text-white transition-opacity hover:opacity-90"
             >
               ยอมรับ
             </button>

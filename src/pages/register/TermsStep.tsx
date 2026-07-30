@@ -93,6 +93,17 @@ export default function TermsStep() {
           <SubmitButton to="/register/success" label="ลงทะเบียนเข้าแข่งขัน" />
         </>
       }
+      /* the scrim is `fixed inset-0`, so it has to sit outside the view-transition body */
+      overlay={
+        <PolicyModal
+          document={REQUIRED_DOCUMENTS.find((d) => d.title === openDoc)?.document ?? null}
+          onDecline={() => setOpenDoc(null)}
+          onAccept={() => {
+            if (openDoc) setAccepted((prev) => [...new Set([...prev, openDoc])])
+            setOpenDoc(null)
+          }}
+        />
+      }
     >
       <div className="flex w-full flex-col items-center justify-center gap-6">
         <section className="flex w-full flex-col items-start justify-center gap-3">
@@ -131,15 +142,6 @@ export default function TermsStep() {
           </div>
         </section>
       </div>
-
-      <PolicyModal
-        document={REQUIRED_DOCUMENTS.find((d) => d.title === openDoc)?.document ?? null}
-        onDecline={() => setOpenDoc(null)}
-        onAccept={() => {
-          if (openDoc) setAccepted((prev) => [...new Set([...prev, openDoc])])
-          setOpenDoc(null)
-        }}
-      />
     </WizardShell>
   )
 }
