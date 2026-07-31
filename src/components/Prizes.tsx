@@ -23,7 +23,7 @@ export default function Prizes() {
        * which is what made it read as oversized. lg-only, because below lg the band's
        * props are hidden and the gap would just be dead space.
        */
-      className="relative bg-brand-red px-4 py-20 lg:mb-[247px] lg:bg-transparent lg:px-15 lg:py-[165.5px]"
+      className="relative bg-brand-red px-4 py-20 lg:mb-[248px] lg:bg-transparent lg:px-15 lg:py-[165.5px]"
     >
       <HomeDecor nodes={PRIZES_DECOR} className="z-0" />
 
