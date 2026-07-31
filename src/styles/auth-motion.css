@@ -51,9 +51,12 @@
  * `transform-origin: 50% 50%` turns the ring about its own axis.
  *
  * Constant motion takes `linear` — any easing would betray the loop point. One
- * revolution per 96s puts the outermost shaker at roughly 23px/s: a lazy turn you
- * notice only if you look at it, never a spinner. 0deg → 360deg is seamless by
- * definition, so there is no join to hide.
+ * revolution per `--turn-period` (96s, defined once on `:root` in pasta-motion.css and
+ * shared with the pan, the hall-of-fame ring and the 404 shrimp) puts the outermost shaker
+ * at roughly 23px/s: a lazy turn you notice only if you look at it, never a spinner. Two
+ * rings at 96s and 92s read as two clocks rather than one slow world, which is why the
+ * period is a token and not a literal. 0deg → 360deg is seamless by definition, so there
+ * is no join to hide.
  */
 @keyframes auth-pepper-turn {
   from {
@@ -66,7 +69,7 @@
 
 .auth-pepper-ring {
   transform-origin: 50% 50%;
-  animation: auth-pepper-turn 96s linear infinite;
+  animation: auth-pepper-turn var(--turn-period, 96s) linear infinite;
   /* eight large PNGs under one transform — promote the layer once, not per frame */
   will-change: transform;
 }
@@ -236,7 +239,7 @@
   ::view-transition-old(auth-block-red),
   ::view-transition-old(auth-block-green),
   ::view-transition-old(auth-block-amber) {
-    animation: auth-fade-out 240ms ease-out both;
+    animation: auth-fade-out 240ms var(--ease-out-auth) both;
   }
 
   ::view-transition-new(auth-block-red),
@@ -328,9 +331,19 @@
    * it closes, which is the opposite direction to the sheet on the same hop: the two
    * crossing is what makes it read as one screen handing over to another.
    */
+  /*
+   * The green block is listed for `submit` as well, and only green. The error screen drops it
+   * (`MUTED_BLOCKS` in AuthBackdrop.tsx is red and amber), so it is the one shape a submit can
+   * leave without a counterpart to travel to — and without this it would take the ungated
+   * 240ms cross-fade above while its two neighbours are running a 460ms arrival, which is the
+   * one block in the set visibly on a different clock. Latent today: `submit` is only ever
+   * fired from the terms step, which paints no colour blocks at all, so it becomes live the
+   * day a real submit handler can route from a colour-bearing screen to the error one.
+   */
   :root[data-auth-nav='enter']::view-transition-old(auth-block-red),
   :root[data-auth-nav='enter']::view-transition-old(auth-block-green),
   :root[data-auth-nav='enter']::view-transition-old(auth-block-amber),
+  :root[data-auth-nav='submit']::view-transition-old(auth-block-green),
   :root[data-auth-nav='submit-back']::view-transition-old(auth-block-red),
   :root[data-auth-nav='submit-back']::view-transition-old(auth-block-green),
   :root[data-auth-nav='submit-back']::view-transition-old(auth-block-amber) {
@@ -482,7 +495,7 @@
   }
 
   ::view-transition-old(auth-sheet) {
-    animation: auth-fade-out 200ms ease-out both;
+    animation: auth-fade-out 200ms var(--ease-out-auth) both;
   }
 
   ::view-transition-new(auth-sheet) {
@@ -570,7 +583,7 @@
   :root[data-auth-nav='gate']::view-transition-old(root),
   :root[data-auth-nav='gate']::view-transition-new(root) {
     animation-duration: 280ms;
-    animation-timing-function: ease-out;
+    animation-timing-function: var(--ease-out-auth);
   }
 
   /*
@@ -589,7 +602,7 @@
   :root[data-auth-nav='gate-back']::view-transition-new(root) {
     animation-duration: 280ms;
     animation-delay: 300ms;
-    animation-timing-function: ease-out;
+    animation-timing-function: var(--ease-out-auth);
   }
 
   /*
@@ -607,7 +620,7 @@
   }
 
   ::view-transition-old(auth-topbar) {
-    animation: auth-fade-out 180ms ease-out both;
+    animation: auth-fade-out 180ms var(--ease-out-auth) both;
   }
 
   ::view-transition-new(auth-topbar) {
@@ -617,7 +630,7 @@
   /* whatever is left over — the sign-in form, the sheet's own copy — just crossfades */
   ::view-transition-group(root) {
     animation-duration: 360ms;
-    animation-timing-function: ease-out;
+    animation-timing-function: var(--ease-out-auth);
   }
 }
 
@@ -910,7 +923,7 @@
 
   /* the pasta holds its place; only the terms step drops the tomatoes, so they fade */
   ::view-transition-old(wizard-tomatoes) {
-    animation: auth-fade-out 240ms ease-out both;
+    animation: auth-fade-out 240ms var(--ease-out-auth) both;
   }
 
   ::view-transition-new(wizard-tomatoes) {
@@ -929,7 +942,7 @@
   }
 
   :root[data-auth-nav='submit']::view-transition-old(wizard-pasta) {
-    animation: wizard-pasta-leave 320ms ease-out both;
+    animation: wizard-pasta-leave 320ms var(--ease-out-auth) both;
   }
 
   /*
@@ -960,7 +973,7 @@
 
   /* forward — the default, so a missing flag still reads correctly */
   ::view-transition-old(wizard-body) {
-    animation: wizard-exit-back 200ms ease-out both;
+    animation: wizard-exit-back 200ms var(--ease-out-auth) both;
   }
 
   ::view-transition-new(wizard-body) {
@@ -977,7 +990,7 @@
   :root[data-auth-nav='gate-back']::view-transition-old(wizard-body),
   :root[data-auth-nav='enter-back']::view-transition-old(wizard-body),
   :root[data-auth-nav='submit-back']::view-transition-old(wizard-body) {
-    animation: wizard-exit-forward 200ms ease-out both;
+    animation: wizard-exit-forward 200ms var(--ease-out-auth) both;
   }
 
   :root[data-auth-nav='back']::view-transition-new(wizard-body),
@@ -1099,19 +1112,51 @@
  * it already be there. The delay is one step-transition long, so the sweep starts as
  * the incoming step settles: first the form arrives, then the progress confirms it.
  * `scaleX` from a left origin — the bar's width never changes, only what fills it.
+ *
+ * A transition, not a keyframe, and that is the whole point. ถัดไป and ย้อนกลับ sit next to
+ * each other, so a double-tap used to restart the sweep from `scaleX(0)` while the segment
+ * that was mid-sweep snapped to full: a `@keyframes` cannot express "continue from wherever
+ * you currently are", and re-keying the element to replay it guarantees it cannot. A
+ * transition on a stable element retargets instead — interrupted halfway it eases from the
+ * position it actually holds, and undone it runs back down the way it came. Same 420ms, same
+ * curve, same 300ms delay.
+ *
+ * The red fill is a pseudo-element rather than the segment itself, because the segment is
+ * also the grey track: scaling the box would take the track with it and leave a gap in the
+ * bar for the length of the sweep. `::after` scales over a track that stays put.
+ *
+ * `@starting-style` is what keeps the sweep on a fresh mount. Every wizard step is its own
+ * route, so all five segments are new elements on nearly every hop and a transition has no
+ * "before" value to move from — the bar would simply render filled. Giving only the segment
+ * this step just reached (`data-sweep`) a starting value of `scaleX(0)` reproduces exactly
+ * what the keyframe did: the newest segment draws on, the ones behind it are already there
+ * and do not re-draw. Where the DOM *is* stable — steps 3 and 4 are one route with a
+ * changing param — the retarget above is what runs.
  */
-@keyframes wizard-progress-fill {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
+.wizard-progress-fill {
+  position: relative;
+  overflow: hidden;
 }
 
-.wizard-progress-fill {
+.wizard-progress-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-color: var(--color-brand-red);
   transform-origin: left center;
-  animation: wizard-progress-fill 420ms var(--ease-out-auth) 300ms backwards;
+  transform: scaleX(0);
+  transition: transform 420ms var(--ease-out-auth) 300ms;
+}
+
+.wizard-progress-fill[data-filled='true']::after {
+  transform: scaleX(1);
+}
+
+@starting-style {
+  .wizard-progress-fill[data-sweep='true'][data-filled='true']::after {
+    transform: scaleX(0);
+  }
 }
 
 /* --------------------------------------------------------------- modals ---- */
@@ -1138,7 +1183,7 @@
 
 @media (prefers-reduced-motion: no-preference) {
   .auth-modal-scrim {
-    transition: opacity 180ms ease-out;
+    transition: opacity 180ms var(--ease-out-auth);
   }
 
   .auth-modal-scrim[data-state='open'] {
@@ -1157,8 +1202,8 @@
     transform: translate3d(0, 12px, 0) scale(0.96);
     transform-origin: var(--auth-origin-x, 50%) var(--auth-origin-y, 50%);
     transition:
-      opacity 190ms ease-out,
-      transform 190ms ease-out;
+      opacity 190ms var(--ease-out-auth),
+      transform 190ms var(--ease-out-auth);
   }
 
   .auth-modal-sheet[data-state='open'] {
@@ -1177,8 +1222,8 @@
     opacity: 0;
     transform: translate3d(0, 10px, 0);
     transition:
-      opacity 160ms ease-out,
-      transform 160ms ease-out;
+      opacity 160ms var(--ease-out-auth),
+      transform 160ms var(--ease-out-auth);
   }
 
   .auth-modal-sheet[data-state='open'] .auth-modal-part {
@@ -1241,9 +1286,192 @@
   }
 }
 
+/*
+ * Applied only once a tick is *chosen*, never on mount. The consent rows arrive with a
+ * default already selected, and a stroke that travels on page entry says "you decided" about
+ * something the user has not touched — for both ยอมรับ and ไม่ยอมรับ, simultaneously, on top
+ * of the incoming `wizard-body` transition. Each call site keeps a `touched` flag and adds
+ * the class from the change handler, so the tick is static on arrival and drawn on a choice.
+ */
 .auth-check-path {
   stroke-dasharray: 16;
   animation: auth-check-draw 260ms var(--ease-out-auth) backwards;
+}
+
+/* ------------------------------------------------------- drop targets ---- */
+
+/*
+ * The dashed upload boxes — six per entrant step, plus the team photo — accept a drag and
+ * had nothing to say about it: the same static outline whether a file is over them or not.
+ * `data-over` is set from the drag handlers, and the box answers with its hover border, a
+ * 4% wash of the same red, and 1% of scale. 1% is felt rather than seen, which is right for
+ * a 500-wide target that must not appear to jump under the cursor mid-drag.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  /*
+   * `.auth-drop.mm-press` is in the selector, and it is not padding. These boxes carry both
+   * classes — they are drop targets *and* pressable — and `transition` is a shorthand, so
+   * whichever of the two rules the cascade picks silently discards the other's property list.
+   * micro-motion.css is imported after this file, so `.mm-press` would win on order alone and
+   * the border and background would snap. The compound selector outranks it on specificity
+   * instead, and the list below is the union, so the press keeps its own 110ms timing.
+   */
+  .auth-drop,
+  .auth-drop.mm-press {
+    transition:
+      border-color var(--mm-fast) var(--mm-ease),
+      background-color var(--mm-fast) var(--mm-ease),
+      scale var(--mm-press) var(--mm-ease-out),
+      transform var(--mm-press) var(--mm-ease-out);
+  }
+
+  .auth-drop[data-over='true'] {
+    scale: 1.01;
+  }
+}
+
+/* the colour change is the affordance, so it is not conditional on motion preference */
+.auth-drop[data-over='true'] {
+  border-color: var(--color-brand-red);
+  background-color: rgb(192 86 62 / 0.04);
+}
+
+/* ------------------------------------------------------------- submit ---- */
+
+/*
+ * Pressing the button that submits a registration should not look like following a link.
+ * `data-busy` swaps the label for a two-arc spinner in place, so the pill neither resizes
+ * nor moves, and takes pointer events off it so the press cannot be repeated.
+ *
+ * 700ms `linear` is the one place in this file where `linear` is right: a spinner is
+ * constant motion, and any easing would show as a pulse once per turn.
+ *
+ * The two opacity swaps sit outside the reduced-motion guard, on the same reasoning as the
+ * modal's: a pending state has to be *legible* whatever the preference, and the alternative
+ * under `reduce` is a label and a spinner drawn on top of each other. Only the turn is
+ * conditional, and a still two-arc glyph is a perfectly good busy marker.
+ *
+ * Note that nothing sets `data-busy` for longer than the navigation takes today — there is
+ * no network call in this flow yet. The markup and the motion are here so that the moment a
+ * real handler exists it has a pending state to switch on.
+ */
+.auth-submit-spin {
+  opacity: 0;
+  transition: opacity 120ms linear;
+}
+
+.auth-submit[data-busy='true'] .auth-submit-spin {
+  opacity: 1;
+}
+
+.auth-submit[data-busy='true'] .auth-submit-label {
+  opacity: 0;
+  transition: opacity 120ms linear;
+}
+
+.auth-submit[data-busy='true'] {
+  pointer-events: none;
+}
+
+/*
+ * Gated on `data-busy` rather than always running. An `infinite` animation on a hidden
+ * element is still a live animation: it holds a compositor layer and ticks every frame for
+ * the whole time the terms step is sitting idle, which is the only page in the flow that
+ * would have had something animating at rest.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .auth-submit[data-busy='true'] .auth-submit-spinner {
+    animation: auth-spin 700ms linear infinite;
+    transform-origin: 50% 50%;
+  }
+}
+
+@keyframes auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ------------------------------------------------- field validation ---- */
+
+/*
+ * SPEC ONLY — nothing in the flow sets either attribute yet. There is no `<form>`, no
+ * `onSubmit` and no error state anywhere in pages/register/**, and `required` reaches the
+ * `<Label>` (which draws the red asterisk) rather than the `<input>`, so not even native
+ * constraint validation runs. Wiring that up is feature work, not motion work; these two
+ * rules exist so that when it lands the motion is already decided.
+ *
+ * A nudge, not a shake: 4px at the peak, four decreasing swings, and written on the
+ * `translate` longhand so it cannot collide with a `transform` the field already carries.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .auth-field-error {
+    animation: auth-field-in 200ms var(--ease-out-auth) both;
+  }
+
+  .auth-field[data-invalid='true'] {
+    animation: auth-nudge 320ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  }
+}
+
+@keyframes auth-field-in {
+  from {
+    opacity: 0;
+    translate: 0 -4px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes auth-nudge {
+  0%,
+  100% {
+    translate: 0;
+  }
+  20% {
+    translate: -4px;
+  }
+  40% {
+    translate: 3px;
+  }
+  60% {
+    translate: -2px;
+  }
+  80% {
+    translate: 1px;
+  }
+}
+
+/* --------------------------------------------------- result mascot ---- */
+
+/*
+ * The success and error screens are the one place in the flow the user arrives once, and
+ * they were spending none of that budget: the mascot rose 48px on the same `auth-rise` a
+ * nav link gets. A settle instead of a slide — it comes up 32px from 90% and overshoots its
+ * final size by 2%, which is the same restraint as the sheet spring's 0.77%: read as an
+ * object arriving with mass, never as a bounce.
+ */
+[data-auth-entrance] .auth-pop {
+  animation: auth-pop 620ms var(--ease-out-auth) backwards;
+}
+
+@keyframes auth-pop {
+  from {
+    opacity: 0;
+    translate: 0 32px;
+    scale: 0.9;
+  }
+  60% {
+    opacity: 1;
+    scale: 1.02;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
 }
 
 /* ----------------------------------------------------- reduced motion ---- */
@@ -1276,9 +1504,22 @@
     animation: auth-fade-in 200ms linear backwards;
   }
 
-  .wizard-progress-fill,
   .auth-check-path {
     animation: none;
+  }
+
+  /*
+   * The progress fill is a transition now, so `animation: none` no longer reaches it.
+   * Cutting the transition lands each segment on its final scale immediately — filled
+   * segments full, the rest empty — which is the same end state the sweep reached.
+   */
+  .wizard-progress-fill::after {
+    transition: none;
+  }
+
+  /* the mascot still arrives, it just does not travel or overshoot */
+  [data-auth-entrance] .auth-pop {
+    animation: auth-fade-in 200ms linear backwards;
   }
 
   ::view-transition-group(*) {

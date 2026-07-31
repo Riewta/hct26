@@ -356,7 +356,6 @@
 }
 
 html {
-  scroll-behavior: smooth;
   /*
    * Decorations bleed past the viewport edge, so the document has to clip them — but
    * `overflow-x: hidden` is the wrong primitive for that. `hidden` makes the element a
@@ -368,10 +367,41 @@ html {
    * `overflow-x: clip` clips without creating a scroll container, so there is no
    * scrollport to pan and `scrollWidth` collapses to `clientWidth`. `overflow-y` stays
    * `visible` (clip is one of the two values allowed to pair with visible), so the
-   * document keeps being the vertical scroll container and `scroll-behavior` above,
+   * document keeps being the vertical scroll container and `scroll-behavior` below,
    * `position: sticky` and scroll anchoring all keep working.
    */
   overflow-x: clip;
+}
+
+/*
+ * Smooth scrolling, for the one navigation that wants it and no other.
+ *
+ * `html { scroll-behavior: smooth }` used to be unconditional, and it was quietly the most
+ * destructive line in the stylesheet. `<ScrollRestoration>` resets a new route to the top
+ * with `scrollTo(0, 0)`, and a *programmatic* scroll obeys `scroll-behavior` too — so
+ * clicking a nav link from the bottom of `/` (y 4704) committed `/guide` at y 4704 and then
+ * flew 4704px back up over about 1550ms. Measured: at t≈90ms all eight of `/guide`'s
+ * reveals were already above the fold, so `useReveal`'s "already scrolled past on mount"
+ * branch marked every one of them visible with no animation, and the page the user landed
+ * on could never animate again. `/hall-of-fame` lost 3 of 3 the same way, at t≈38ms.
+ *
+ * Two triggers, because in a client-side router the standard one is never true:
+ *
+ * - `:has(:target)` is the real fragment case — a direct load or reload of `/#calendar`, or
+ *   an in-page anchor. It is scoped to the *document*, so a plain route change (no
+ *   fragment, nothing targeted) gets an instant reset and keeps its reveals.
+ * - `[data-fragment-nav]` covers the app's own footer fragment links. React Router changes
+ *   the URL with `history.pushState`, and pushState deliberately does NOT re-run the
+ *   browser's scroll-to-fragment steps — so it never updates the document's target element
+ *   and `:target` matches nothing, measured `false` on `/#calendar` at y 1192. App.tsx
+ *   stamps the attribute from a router subscriber, which runs before React commits and so
+ *   before `<ScrollRestoration>` scrolls; the next navigation without a hash clears it.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  html:has(:target),
+  html[data-fragment-nav] {
+    scroll-behavior: smooth;
+  }
 }
 
 body {
@@ -393,13 +423,28 @@ body {
  * Only opacity and transform animate, both compositor-friendly.
  */
 @media (prefers-reduced-motion: no-preference) {
+  /*
+   * The transition list carries the INTERACTION properties as well as the reveal's own two.
+   * `transition` is a shorthand, and this rule (0-1-0) loads after micro-motion.css's
+   * `.mm-lift` / `.mm-press` (also 0-1-0), so for any hoverable that is itself a reveal or
+   * a reveal-group child — the three `/guide` scope cards, the two contact channels — this
+   * declaration REPLACED their transition list and their hover became instant. Restating
+   * the four longhands micro-motion.css animates is what lets one element be both a reveal
+   * and a pressable; the pairs are `translate`/`scale` (never `transform`, which the reveal
+   * itself owns) at micro-motion's own durations.
+   */
   .reveal,
   .reveal-group > * {
     opacity: 0;
     transform: translateY(24px);
     transition:
-      opacity 600ms cubic-bezier(0.16, 1, 0.3, 1),
-      transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
+      opacity 600ms var(--mm-ease-out) var(--reveal-delay, 0ms),
+      transform 600ms var(--mm-ease-out) var(--reveal-delay, 0ms),
+      translate var(--mm-base) var(--mm-ease-out),
+      scale var(--mm-press) var(--mm-ease-out),
+      color var(--mm-fast) var(--mm-ease),
+      background-color var(--mm-fast) var(--mm-ease),
+      border-color var(--mm-fast) var(--mm-ease);
   }
 
   .reveal.is-visible,
@@ -408,23 +453,32 @@ body {
     transform: none;
   }
 
-  /* children of a group cascade in; 70ms apart reads as one motion, not a queue */
+  /*
+   * Children of a group cascade in; 70ms apart reads as one motion, not a queue.
+   *
+   * Published as a custom property rather than as `transition-delay`, which is a list
+   * matching `transition-property` and so delayed the hover lift on the scope cards by up
+   * to 140ms as well. `--reveal-delay` is spent only on the two reveal entries above.
+   * An element revealing on its own — see PastEventCard, ScopeSection, Prizes, Steps, where
+   * a group's children are taller than the viewport and cannot share one trigger — sets the
+   * same property inline, so the ladder survives being taken apart.
+   */
   .reveal-group.is-visible > *:nth-child(2) {
-    transition-delay: 70ms;
+    --reveal-delay: 70ms;
   }
   .reveal-group.is-visible > *:nth-child(3) {
-    transition-delay: 140ms;
+    --reveal-delay: 140ms;
   }
   .reveal-group.is-visible > *:nth-child(4) {
-    transition-delay: 210ms;
+    --reveal-delay: 210ms;
   }
   .reveal-group.is-visible > *:nth-child(5) {
-    transition-delay: 280ms;
+    --reveal-delay: 280ms;
   }
   .reveal-group.is-visible > *:nth-child(6) {
-    transition-delay: 350ms;
+    --reveal-delay: 350ms;
   }
   .reveal-group.is-visible > *:nth-child(n + 7) {
-    transition-delay: 420ms;
+    --reveal-delay: 420ms;
   }
 }

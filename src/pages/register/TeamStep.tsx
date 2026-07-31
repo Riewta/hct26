@@ -1,5 +1,13 @@
+import { useState } from 'react'
 import WizardShell, { NextButton } from '../../components/form/WizardShell'
-import { SectionTitle, SelectField, TextField, Label } from '../../components/form/Field'
+import {
+  CheckMark,
+  Label,
+  SectionTitle,
+  SelectField,
+  TextField,
+  useDropTarget,
+} from '../../components/form/Field'
 
 const F = '/assets/figma/'
 
@@ -35,6 +43,18 @@ function Avatar({ crop, src }: { crop: boolean; src: string }) {
 
 /** Figma 708:1255 — the shortest step, which is why the shell's card floor is 832. */
 export default function TeamStep() {
+  const photo = useDropTarget()
+
+  /*
+   * Team size is tracked here only so the choice can be *confirmed*: the box used to swap its
+   * border and background with no transition and no acknowledgement, in the one step of the
+   * flow where a tick already draws itself. `touched` keeps the tick static if a value is ever
+   * pre-selected and draws it only for a choice the user made — the same rule the consent rows
+   * follow (see `.auth-check-path` in styles/auth-motion.css).
+   */
+  const [size, setSize] = useState<number | null>(null)
+  const [touched, setTouched] = useState(false)
+
   return (
     <WizardShell step={1} actions={<NextButton to="/register/advisor" />}>
       <section className="flex w-full flex-col items-center justify-center gap-4">
@@ -42,7 +62,10 @@ export default function TeamStep() {
 
         <div className="flex w-full flex-col items-start gap-8 md:flex-row">
           <div className="flex flex-col items-center justify-center gap-3">
-            <label className="flex size-50 cursor-pointer flex-col items-center justify-center gap-2.5 rounded-[20px] border border-dashed border-[#dcdcdc] hover:border-brand-red">
+            <label
+              {...photo}
+              className="auth-drop mm-press flex size-50 cursor-pointer flex-col items-center justify-center gap-2.5 rounded-[20px] border border-dashed border-[#dcdcdc] hover:border-brand-red"
+            >
               <img
                 src={`${F}18691121244d1cc30f2fff4bf73c50850cbef49f.svg`}
                 alt=""
@@ -69,23 +92,44 @@ export default function TeamStep() {
                 <Label required>จำนวนนักเรียนในทีม</Label>
               </legend>
               <div className="flex w-full flex-col items-start gap-4 sm:flex-row">
-                {TEAM_SIZES.map((size) => (
+                {TEAM_SIZES.map((option) => (
                   <label
-                    key={size.count}
-                    className="flex flex-1 cursor-pointer flex-col items-center justify-center gap-2.5 overflow-hidden rounded-[12px] border-[0.8px] border-[#dcdcdc] p-3 hover:border-brand-red has-checked:border-brand-red has-checked:bg-brand-red/5"
+                    key={option.count}
+                    className="mm-press flex flex-1 cursor-pointer flex-col items-center justify-center gap-2.5 overflow-hidden rounded-[12px] border-[0.8px] border-[#dcdcdc] p-3 transition-colors hover:border-brand-red has-checked:border-brand-red has-checked:bg-brand-red/5"
                   >
-                    <input type="radio" name="teamSize" value={size.count} className="sr-only" />
+                    <input
+                      type="radio"
+                      name="teamSize"
+                      value={option.count}
+                      checked={size === option.count}
+                      onChange={() => {
+                        setSize(option.count)
+                        setTouched(true)
+                      }}
+                      className="sr-only"
+                    />
                     <span className="flex w-full items-center justify-center">
-                      {size.avatars.map((avatar, i) => (
+                      {option.avatars.map((avatar, i) => (
                         <span
                           key={i}
-                          style={{ marginRight: i < size.avatars.length - 1 ? -20 : 0 }}
+                          style={{ marginRight: i < option.avatars.length - 1 ? -20 : 0 }}
                         >
                           <Avatar {...avatar} />
                         </span>
                       ))}
                     </span>
-                    <span className="text-lg leading-[normal] text-gray-1">{size.count} คน</span>
+                    <span className="flex items-center gap-2 text-lg leading-[normal] text-gray-1">
+                      {/*
+                       * The tick is the confirmation the box's colour swap never gave. Its slot
+                       * is always in the layout, hidden rather than unmounted, so choosing a
+                       * size cannot shift the caption sideways under the reader's eye.
+                       */}
+                      <CheckMark
+                        className={`size-4 text-brand-red ${size === option.count ? '' : 'invisible'}`}
+                        drawn={touched && size === option.count}
+                      />
+                      {option.count} คน
+                    </span>
                   </label>
                 ))}
               </div>

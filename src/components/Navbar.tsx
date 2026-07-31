@@ -1,13 +1,88 @@
-import { useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import ScrollEdgeEffect from './ScrollEdgeEffect'
 import { NAV_LINKS } from '../data'
+
+/** Past this many px the nav is over content rather than over the top of the page. */
+const SCROLLED_AT = 24
 
 export default function Navbar() {
   const [open, setOpen] = useState(false)
 
+  /*
+   * G16 — the chrome had one appearance for the whole of every page. `ScrollEdgeEffect`
+   * was mounted unconditionally, so at scroll 0 a seven-layer `backdrop-filter` stack was
+   * blurring nothing (there is no content under the nav yet) and the pill sat flat on the
+   * page looking exactly as it does 4000px down.
+   *
+   * rAF-throttled and `passive`, because this fires on every wheel tick: the listener only
+   * records that a frame is pending, and the single read happens inside the frame. The
+   * state is a boolean, so React re-renders twice per visit to the top of a page, not per
+   * scroll event. The band's fade and the pill's shadow are both CSS off `data-scrolled`
+   * (micro-motion.css) — nothing here writes a style.
+   */
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    let ticking = false
+    const onScroll = () => {
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => {
+        ticking = false
+        setScrolled(window.scrollY > SCROLLED_AT)
+      })
+    }
+
+    onScroll() // a deep link or a restored position can start the page already scrolled
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  /*
+   * G9 — the active item was a `font-semibold` snap and nothing else, which also reflowed
+   * the label's own width as it landed. The weight stays (it is what Figma draws); the
+   * underline is what makes the change a movement between two places instead of a swap.
+   *
+   * One element positioned by a transform, exactly as the dashboard's tab rule is measured
+   * (pages/MyTeam.tsx): a border redrawn under whichever link is active reads as two
+   * separate marks appearing, not as one travelling. Measured off the live anchor rather
+   * than off its grid cell — the cells are 177.33 centres and every Thai label overhangs
+   * its own cell, so the cell's width is not the label's.
+   *
+   * `useLayoutEffect` and a `ResizeObserver`: the row appears at `md` and every figure in it
+   * rides `--fl`, so the bar has to be re-measured on any width change, and it has to be
+   * measured before paint or the first frame shows it at the wrong width.
+   */
+  const { pathname } = useLocation()
+  const listRef = useRef<HTMLUListElement>(null)
+  const [bar, setBar] = useState<{ x: number; y: number; w: number } | null>(null)
+  const active = NAV_LINKS.findIndex((link) => link.to === pathname)
+
+  useLayoutEffect(() => {
+    const list = listRef.current
+    if (!list || active < 0) {
+      setBar(null)
+      return
+    }
+
+    const measure = () => {
+      const item = list.children[active]?.firstElementChild as HTMLElement | undefined
+      if (!item) return
+      setBar({ x: item.offsetLeft, y: item.offsetTop + item.offsetHeight + 2, w: item.offsetWidth })
+    }
+
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(list)
+    return () => observer.disconnect()
+  }, [active])
+
   return (
-    <div className="shell-wide fixed inset-x-0 top-0 z-50 pt-[calc(16px_+_24*var(--fl))]">
+    <div
+      data-scrolled={scrolled}
+      className="shell-wide fixed inset-x-0 top-0 z-50 pt-[calc(16px_+_24*var(--fl))]"
+    >
       {/*
        * Figma's band is 160 tall against a 183-tall nav row on a 1440 frame — a fifth of the
        * viewport height there. Held at 160 on a 390x844 phone the same band is a *third* of
@@ -15,10 +90,13 @@ export default function Navbar() {
        * over whatever the page put below the nav: at 390 it was mushing the calendar's own
        * section heading. The band now tracks the nav row it belongs to.
        */}
-      <ScrollEdgeEffect className="absolute inset-x-0 top-0 h-[calc(92px_+_68*var(--fl))]" />
+      <ScrollEdgeEffect className="site-nav-band absolute inset-x-0 top-0 h-[calc(92px_+_68*var(--fl))]" />
 
-      <nav className="relative mx-auto flex max-w-[1320px] items-center justify-between gap-6 rounded-[100px] bg-white py-4 pr-4 pl-[calc(20px_+_20*var(--fl))] shadow-soft">
-        <NavLink to="/" className="mm-press shrink-0">
+      {/* `site-nav` is both the scrolled-state hook and the view-transition name: this pill
+          is the same element on all three marketing pages, so it should not move when one
+          becomes another. See micro-motion.css. */}
+      <nav className="site-nav relative mx-auto flex max-w-[1320px] items-center justify-between gap-6 rounded-[100px] bg-white py-4 pr-4 pl-[calc(20px_+_20*var(--fl))] shadow-soft">
+        <NavLink to="/" viewTransition className="mm-press shrink-0">
           <img
             src="/assets/logo-nav.png"
             alt="BangMod Hackathon 2026"
@@ -34,11 +112,15 @@ export default function Navbar() {
          * `md` up: at 1024 the old layout jumped straight from a hamburger to full 80-apart
          * desktop spacing, and the tablet band had room for the links all along.
          */}
-        <ul className="hidden items-center md:grid md:grid-cols-3 md:gap-[calc(12px_+_68*var(--fl))]">
+        <ul
+          ref={listRef}
+          className="relative hidden items-center md:grid md:grid-cols-3 md:gap-[calc(12px_+_68*var(--fl))]"
+        >
           {NAV_LINKS.map((link) => (
             <li key={link.to} className="flex justify-center md:w-[calc(64px_+_33.33*var(--fl))]">
               <NavLink
                 to={link.to}
+                viewTransition
                 className={({ isActive }) =>
                   `mm-link mm-press fl-nav leading-[1.4] whitespace-nowrap hover:text-brand-red ${
                     isActive ? 'font-semibold' : 'font-normal'
@@ -49,6 +131,21 @@ export default function Navbar() {
               </NavLink>
             </li>
           ))}
+
+          {/* Absolutely positioned, so it is out of flow and never becomes a fourth track
+              in the three-column grid.
+             `site-nav-indicator` is a view-transition name of its own, because the pill it
+              lives in is PINNED across a marketing hop: inside a pinned snapshot the bar
+              would jump to the new label instead of travelling to it. Named separately, the
+              browser interpolates its box between the two snapshots and the travel happens
+              during the page transition rather than after it. */}
+          {bar && (
+            <span
+              aria-hidden
+              className="mm-indicator site-nav-indicator absolute top-0 left-0 h-[2px] rounded-full bg-brand-red"
+              style={{ width: bar.w, transform: `translate(${bar.x}px, ${bar.y}px)` }}
+            />
+          )}
         </ul>
 
         <div className="flex items-center gap-2">
@@ -92,6 +189,7 @@ export default function Navbar() {
             <li key={link.to}>
               <NavLink
                 to={link.to}
+                viewTransition
                 onClick={() => setOpen(false)}
                 className="mm-link mm-press block text-lg hover:text-brand-red"
               >

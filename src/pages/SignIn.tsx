@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import AuthBackdrop from '../components/AuthBackdrop'
 import GoogleLogo from '../components/GoogleLogo'
-import { useAuthNavigate } from '../components/form/wizardNav'
+import { useAuthNavigate, useOwnArrival } from '../components/form/wizardNav'
 
 /**
  * Set once the collage has assembled, and deliberately module scope rather than state: it
@@ -42,7 +42,19 @@ function useArrivalEntrance() {
  */
 export default function SignIn() {
   const go = useAuthNavigate()
-  const entrance = useArrivalEntrance()
+  const firstArrival = useArrivalEntrance()
+
+  /*
+   * And the same guard the registration sheet and the result cards take. The three colour
+   * blocks in the collage carry both a `view-transition-name` and `.auth-rise`, so an arrival
+   * that is already being animated by a transition would run two timelines over one element:
+   * the group scaling the snapshot while the live block tries to travel 48px inside it, which
+   * distorts the rise by whatever the group's scale happens to be. Latent today — the module
+   * flag above means a `gate-back` arrival never plays the entrance anyway — but the pairing is
+   * the same defect the result cards had, and one condition closes it for good.
+   */
+  const own = useOwnArrival()
+  const entrance = firstArrival && own
 
   return (
     /*
@@ -59,7 +71,7 @@ export default function SignIn() {
           <Link
             to="/"
             data-rise={0}
-            className="auth-rise auth-rise-sm flex w-full items-center gap-2.5 text-xl leading-[1.4] transition-opacity hover:opacity-70"
+            className="auth-rise auth-rise-sm mm-press flex w-full items-center gap-2.5 text-xl leading-[1.4] transition-opacity hover:opacity-70"
           >
             <img
               src="/assets/figma/ea51a69c788a5d0d5d7479c1fff987eee5a19fe5.svg"
@@ -105,7 +117,7 @@ export default function SignIn() {
               type="button"
               onClick={() => go('/register', 'gate')}
               data-rise={3}
-              className="auth-rise auth-rise-sm flex h-15 w-full items-center justify-center gap-5 rounded-[20px] bg-[#f6f6f6] px-6 py-4 font-display text-lg leading-[normal] font-semibold transition-[background-color,transform] duration-[160ms] ease-out hover:bg-[#ececec] active:scale-[0.98] motion-reduce:active:scale-100 lg:text-xl"
+              className="auth-rise auth-rise-sm mm-press flex h-15 w-full items-center justify-center gap-5 rounded-[20px] bg-[#f6f6f6] px-6 py-4 font-display text-lg leading-[normal] font-semibold transition-colors hover:bg-[#ececec] lg:text-xl"
             >
               <GoogleLogo />
               เข้าสู่ระบบด้วย Google
@@ -114,7 +126,7 @@ export default function SignIn() {
             <Link
               to="/guide"
               data-rise={4}
-              className="auth-rise auth-rise-sm w-full text-base leading-[normal] font-light text-gray-2 underline-offset-4 hover:underline"
+              className="auth-rise auth-rise-sm mm-press inline-block w-full text-base leading-[normal] font-light text-gray-2 underline-offset-4 hover:underline"
             >
               ข้อกำหนด
             </Link>

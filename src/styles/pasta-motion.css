@@ -51,6 +51,16 @@
   --decor-fit: min(1, tan(atan2(100vw, 1440px)));
 }
 
+/* The one clock. Four decorations turn across this site — sign-in's pan and its shaker
+   ring, hall of fame's pan ring, and the 404's shrimp ring — and the comments below each
+   of them insist the period must be identical, because two rings at 96s and 92s read as
+   two clocks rather than as one slow world. It was written as a literal in three files;
+   now it is written once. ~23px/s at a rim, which is a lazy turn you notice only if you
+   look at it and never a spinner: raising it is not a tuning knob, it is a redesign. */
+:root {
+  --turn-period: 96s;
+}
+
 .decor-stage {
   scale: var(--decor-fit);
 }
@@ -169,7 +179,7 @@
 
 .auth-pan-turn {
   transform-origin: 49.7% 59.1%;
-  animation: pan-turn 96s linear infinite;
+  animation: pan-turn var(--turn-period, 96s) linear infinite;
   /* one large PNG under one transform — promote the layer once, not per frame */
   will-change: transform;
 }
@@ -203,13 +213,42 @@
    exactly it. */
 .hof-pan-ring {
   transform-origin: 75.87% 33.82%;
-  animation: pan-turn 96s linear infinite;
+  animation: pan-turn var(--turn-period, 96s) linear infinite;
   /* nine PNGs under one transform — promote the group once, not nine layers per frame */
   will-change: transform;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .hof-pan-ring {
+    animation: none;
+    will-change: auto;
+  }
+}
+
+/* ----------------------------------------------------- the 404's shrimp ring ----
+
+   Structurally the third of the same object: eight shrimp ringed around the centre of
+   their own 447.75x448.09 box, the way the shaker ring is eight shakers and the pan ring
+   is nine pans. It was the only one of the three standing still, on the one page whose
+   whole job is to soften a dead end — a page that does not move reads as broken twice.
+
+   Origin is the plain box centre, unlike either pan: the eight shrimp are laid out on a
+   circle about the middle of the box, so their mean *is* 50% / 50% (see the coordinate
+   table in pages/NotFound.tsx). Same `pan-turn`, same period token, same reason.
+
+   The class goes on the ring GROUP, never on a shrimp: each shrimp box already carries
+   Figma's own `scaleY(-1) rotate(...)` inline, and an animation on `transform` would
+   overwrite it and flatten the arrangement. Same split as the two rings above — see the
+   note at the head of `.auth-pan-turn`. */
+.nf-shrimp-ring {
+  transform-origin: 50% 50%;
+  animation: pan-turn var(--turn-period, 96s) linear infinite;
+  /* eight PNGs under one transform — promote the group once, not eight layers per frame */
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nf-shrimp-ring {
     animation: none;
     will-change: auto;
   }

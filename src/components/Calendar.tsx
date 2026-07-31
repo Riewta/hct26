@@ -44,10 +44,75 @@ const BOWL_BOX =
   'absolute aspect-[834.211/441.197] w-[68%] -right-[14%] -bottom-[18%] ' +
   'lg:right-auto lg:bottom-auto lg:top-[12.16%]'
 
+/**
+ * One highlight card, revealing itself.
+ *
+ * Same reason as the scope cards and the prizes: from `md` up the pair is a row and shares a
+ * trigger, but at 390 they stack into 500-odd px each and one trigger fired for the second
+ * card at 1.06 of the viewport. The 70ms ladder is carried inline as `--reveal-delay`, which
+ * is spent only on the reveal's own opacity and transform (index.css).
+ */
+function HighlightCard({ item, i }: { item: (typeof TIMELINE_HIGHLIGHTS)[number]; i: number }) {
+  const reveal = useReveal<HTMLElement>()
+
+  return (
+    <article
+      ref={reveal.ref}
+      style={{ '--reveal-delay': `${i * 70}ms` } as React.CSSProperties}
+      /* 500 is the Figma height. The old 360 floor was a desktop card's
+         proportions on a phone — a big empty middle between two short text
+         blocks; 208 is the height the phone card's own content asks for. */
+      className={`relative flex min-h-[calc(208px_+_292*var(--fl))] min-w-0 flex-col justify-between gap-6 overflow-hidden rounded-3xl bg-gradient-to-b p-[calc(20px_+_4*var(--fl))] text-white ${TONE[item.tone].card} ${reveal.cls}`}
+    >
+      <div className={`pointer-events-none overflow-hidden ${BOWL_BOX} ${TONE[item.tone].bowl}`}>
+        <img
+          src={spaghetti}
+          alt=""
+          aria-hidden
+          className="absolute top-[-34.47%] left-[-0.01%] h-[134.47%] w-[100.01%] max-w-none"
+        />
+      </div>
+      <div className="relative">
+        <p className="fl-num-xl leading-[1.4] font-medium">{item.date}</p>
+        <p className="fl-title-sm leading-[1.4] font-normal">{item.label}</p>
+      </div>
+      <p className="fl-lead relative flex items-center gap-3 leading-[1.5]">
+        <img
+          src={addToCalendar}
+          alt=""
+          aria-hidden
+          className="size-[calc(28px_+_8*var(--fl))] shrink-0"
+        />
+        เพิ่มไปยังปฏิทิน
+      </p>
+    </article>
+  )
+}
+
+/** One date card, revealing itself — same reasoning as `HighlightCard`. */
+function StepDateCard({ item, i }: { item: (typeof TIMELINE_STEPS)[number]; i: number }) {
+  const reveal = useReveal<HTMLElement>()
+
+  return (
+    <article
+      ref={reveal.ref}
+      style={{ '--reveal-delay': `${i * 70}ms` } as React.CSSProperties}
+      className={`flex flex-col rounded-3xl bg-white p-[calc(20px_+_4*var(--fl))] shadow-soft ${reveal.cls}`}
+    >
+      <p className="fl-num-lg leading-[1.4] font-medium text-gray-2">{item.date}</p>
+      <p className="fl-body leading-[1.4] font-light">
+        {item.lines.map((line) => (
+          <span key={line} className="block">
+            {line}
+          </span>
+        ))}
+      </p>
+    </article>
+  )
+}
+
 export default function Calendar() {
   const head = useReveal()
-  const cards = useReveal({ group: true })
-  const steps = useReveal({ group: true })
 
   return (
     // Figma: content sits 88.5 below the section top; the 451.5 tail is where the
@@ -67,62 +132,17 @@ export default function Calendar() {
            * near-square that the bowl garnish fills. The 700/476 split is still Figma's, and
            * still only applies where Figma's row exists.
            */}
-          <div
-            ref={cards.ref}
-            className={`grid gap-6 md:grid-cols-2 lg:grid-cols-[700fr_476fr] ${cards.cls}`}
-          >
-            {TIMELINE_HIGHLIGHTS.map((item) => (
-              <article
-                key={item.date}
-                /* 500 is the Figma height. The old 360 floor was a desktop card's
-                   proportions on a phone — a big empty middle between two short text
-                   blocks; 208 is the height the phone card's own content asks for. */
-                className={`relative flex min-h-[calc(208px_+_292*var(--fl))] min-w-0 flex-col justify-between gap-6 overflow-hidden rounded-3xl bg-gradient-to-b p-[calc(20px_+_4*var(--fl))] text-white ${TONE[item.tone].card}`}
-              >
-                <div
-                  className={`pointer-events-none overflow-hidden ${BOWL_BOX} ${TONE[item.tone].bowl}`}
-                >
-                  <img
-                    src={spaghetti}
-                    alt=""
-                    aria-hidden
-                    className="absolute top-[-34.47%] left-[-0.01%] h-[134.47%] w-[100.01%] max-w-none"
-                  />
-                </div>
-                <div className="relative">
-                  <p className="fl-num-xl leading-[1.4] font-medium">{item.date}</p>
-                  <p className="fl-title-sm leading-[1.4] font-normal">{item.label}</p>
-                </div>
-                <p className="fl-lead relative flex items-center gap-3 leading-[1.5]">
-                  <img
-                    src={addToCalendar}
-                    alt=""
-                    aria-hidden
-                    className="size-[calc(28px_+_8*var(--fl))] shrink-0"
-                  />
-                  เพิ่มไปยังปฏิทิน
-                </p>
-              </article>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-[700fr_476fr]">
+            {TIMELINE_HIGHLIGHTS.map((item, i) => (
+              <HighlightCard key={item.date} item={item} i={i} />
             ))}
           </div>
 
           {/* three cards, so two columns leaves the third orphaned beside a half-empty row.
               One column until there is room for all three at `md`. */}
-          <div ref={steps.ref} className={`grid gap-6 md:grid-cols-3 ${steps.cls}`}>
-            {TIMELINE_STEPS.map((item) => (
-              <article
-                key={item.date}
-                className="flex flex-col rounded-3xl bg-white p-[calc(20px_+_4*var(--fl))] shadow-soft"
-              >
-                <p className="fl-num-lg leading-[1.4] font-medium text-gray-2">{item.date}</p>
-                <p className="fl-body leading-[1.4] font-light">
-                  {item.lines.map((line) => (
-                    <span key={line} className="block">
-                      {line}
-                    </span>
-                  ))}
-                </p>
-              </article>
+          <div className="grid gap-6 md:grid-cols-3">
+            {TIMELINE_STEPS.map((item, i) => (
+              <StepDateCard key={item.date} item={item} i={i} />
             ))}
           </div>
         </div>

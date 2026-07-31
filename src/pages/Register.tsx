@@ -91,7 +91,7 @@ export default function Register() {
             wizard's pasta in, which no step-to-step move should do. */}
         <Link
           {...authLink('/register/team', 'enter')}
-          className="flex h-15 w-full items-center justify-center rounded-[20px] bg-brand-red px-6 py-4 font-display text-lg leading-[normal] font-semibold text-white transition-[opacity,transform] duration-[160ms] ease-out hover:opacity-90 active:scale-[0.98] motion-reduce:active:scale-100 lg:text-xl"
+          className="mm-press flex h-15 w-full items-center justify-center rounded-[20px] bg-brand-red px-6 py-4 font-display text-lg leading-[normal] font-semibold text-white transition-opacity hover:opacity-90 lg:text-xl"
         >
           ลงทะเบียน
         </Link>

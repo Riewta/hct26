@@ -114,8 +114,11 @@ export default function Hero() {
         {/* The one control carrying the liquid behaviour so far: it deforms under the
             pointer, can be dragged and springs home. See LiquidButton for the model.
             `mm-press` is deliberately absent — the press feedback is the spring's now. */}
+        {/* The one link out of the marketing pages that should not be a cut: the sign-in
+            screen assembles itself on arrival, and it should arrive rather than replace. */}
         <LiquidButton
           to="/signin"
+          viewTransition
           className="hero-cta font-bold text-white"
           fillClassName="bg-brand-red"
         >

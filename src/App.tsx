@@ -23,6 +23,58 @@ import MyTeam from './pages/MyTeam'
 import NotFound from './pages/NotFound'
 import { trackAuthNav } from './components/form/wizardNav'
 
+/**
+ * The three routes that share `SiteLayout`, and so share the nav and footer DOM.
+ *
+ * Kept beside the route table on purpose — it is the same fact stated twice, and the
+ * `<Route>` elements below are the copy that must not drift.
+ */
+const MARKETING = new Set(['/', '/guide', '/hall-of-fame'])
+
+/**
+ * Publishes two facts about the navigation in flight, on `<html>`, for CSS to read.
+ *
+ * `data-site-nav="marketing"` — this hop starts and ends on a marketing route, i.e. the nav
+ * and the footer are the same elements on both sides. Only then does micro-motion.css name
+ * them and re-time `::view-transition-*(root)`; every rule there is gated on this attribute
+ * so it cannot collide with auth-motion.css, which owns the same pseudo-elements for the
+ * sign-in morph and the wizard hops. The two rule sets are mutually exclusive by
+ * construction rather than by specificity.
+ *
+ * `data-fragment-nav` — this hop carries a URL fragment, so the scroll it is about to do is
+ * a jump to a section and should be smooth. Without it, `scroll-behavior` stays instant and
+ * `<ScrollRestoration>`'s reset-to-top is instant, which is what stops a route change from
+ * flying the whole page up and burning every scroll reveal on the way (see index.css).
+ * `:target` cannot answer this: React Router navigates with `history.pushState`, which does
+ * not re-run the scroll-to-fragment steps and so never sets a target element.
+ *
+ * A router subscriber, not an effect: subscribers are called synchronously from the
+ * router's `updateState`, two React passes before `<RouterProvider>` reaches
+ * `document.startViewTransition` and before `<ScrollRestoration>`'s effect scrolls. Both
+ * attributes are therefore in place before anything that reads them runs. This is the same
+ * seam `trackAuthNav` uses, and for the same reason.
+ */
+function trackSiteNav(r: typeof router) {
+  const root = document.documentElement
+  let prev = r.state.location.pathname
+
+  r.subscribe((state) => {
+    const next = state.location.pathname
+    // `prev !== next`: a same-page fragment link is not a page transition, and snapshotting
+    // one would cross-fade a page against itself while it scrolls.
+    if (MARKETING.has(prev) && MARKETING.has(next) && prev !== next) {
+      root.dataset.siteNav = 'marketing'
+    } else {
+      delete root.dataset.siteNav
+    }
+
+    if (state.location.hash) root.dataset.fragmentNav = ''
+    else delete root.dataset.fragmentNav
+
+    prev = next
+  })
+}
+
 /** Marketing pages share the nav + footer chrome; the auth screens stand alone. */
 function SiteLayout() {
   return (
@@ -103,6 +155,7 @@ const router = createBrowserRouter(
  * form/wizardNav.ts.
  */
 trackAuthNav(router)
+trackSiteNav(router)
 
 export default function App() {
   return <RouterProvider router={router} />

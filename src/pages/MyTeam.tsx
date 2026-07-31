@@ -77,7 +77,16 @@ export default function MyTeam() {
   // the advisor tab is the one shown in the document-issue design
   const [active, setActive] = useState(status === 'issue' ? MEMBERS.length - 1 : 0)
   const [modal, setModal] = useState(params.get('modal'))
-  const [copied, setCopied] = useState(false)
+  /*
+   * The tick's clock is the *moment of the last press*, not a boolean. Keyed on `copied`
+   * the effect could not re-run for a second click inside the window — `copied` was already
+   * true, so nothing changed, the timer kept running on the first click's schedule and the
+   * tick vanished part-way through the second confirmation. Storing the timestamp makes
+   * every press a new value, so the effect re-runs, clears the old timer and starts a fresh
+   * 1600ms. Zero means "not copied", which is also the initial state.
+   */
+  const [copiedAt, setCopiedAt] = useState(0)
+  const copied = copiedAt !== 0
 
   const person = MEMBERS[active]
 
@@ -109,13 +118,23 @@ export default function MyTeam() {
 
   // the tick is a confirmation, not a mode — it hands the copy glyph back on its own
   useEffect(() => {
-    if (!copied) return
-    const timer = window.setTimeout(() => setCopied(false), COPIED_MS)
+    if (!copiedAt) return
+    const timer = window.setTimeout(() => setCopiedAt(0), COPIED_MS)
     return () => window.clearTimeout(timer)
-  }, [copied])
+  }, [copiedAt])
 
   return (
-    <div className="relative min-h-dvh overflow-hidden bg-[#fefdfc]">
+    /*
+     * This is the screen a team arrives at from the end of registration, and it used to
+     * appear in a single frame: header, card, tabs, details and the whole status column at
+     * once, straight off SuccessStep's crossfade. It now assembles in the same cascade
+     * sign-in uses — the shared `[data-auth-entrance] .auth-rise` ladder in
+     * styles/auth-motion.css — rather than a second entrance invented for one page: five
+     * regions at 0/60/110/160/210ms, 560ms each, so the reward reads as being presented.
+     * The two text regions take the 14px distance; the header, the tab bar and the status
+     * column take the full 48.
+     */
+    <div className="relative min-h-dvh overflow-hidden bg-[#fefdfc]" data-auth-entrance>
       <TeamDecor />
 
       {/* Figma 708:2306 — the progressive blur band that fades the pasta out under the nav */}
@@ -128,8 +147,11 @@ export default function MyTeam() {
 
       {/* Figma 708:2307: a 1440 frame padded 100 either side, 60 down, 40 between the rows */}
       <div className="shell-dash relative z-20 mx-auto flex w-full max-w-[1440px] flex-col items-center gap-[calc(24px_+_16*var(--fl))] pt-[calc(24px_+_36*var(--fl))] pb-16">
-        <header className="flex w-full items-center justify-between gap-4 rounded-3xl bg-white p-[calc(16px_+_4*var(--fl))] shadow-soft">
-          <Link to="/" className="mm-press shrink-0">
+        <header
+          className="auth-rise flex w-full items-center justify-between gap-4 rounded-3xl bg-white p-[calc(16px_+_4*var(--fl))] shadow-soft"
+          data-rise="0"
+        >
+          <Link to="/" className="mm-press shrink-0" viewTransition>
             <img
               src={LOGO}
               alt="BangMod Hackathon 2026"
@@ -149,7 +171,7 @@ export default function MyTeam() {
         {/* Figma 708:2317 splits the row 816 / 400 with a 24 gutter */}
         <div className="flex w-full flex-col items-start gap-6 lg:flex-row">
           <div className="flex w-full min-w-0 flex-1 flex-col items-start gap-8 rounded-[20px] bg-white p-4 shadow-soft">
-            <div className="flex w-full items-start gap-4">
+            <div className="auth-rise auth-rise-sm flex w-full items-start gap-4" data-rise="1">
               <div className="aspect-square shrink-0 self-stretch rounded-2xl bg-[#ebebeb]" />
               <div className="flex min-w-0 flex-1 flex-col items-start gap-4">
                 <h1 className="fl-24 leading-[1.4] font-medium">{TEAM.name}</h1>
@@ -160,7 +182,7 @@ export default function MyTeam() {
                     type="button"
                     onClick={() => {
                       navigator.clipboard?.writeText(TEAM.code)
-                      setCopied(true)
+                      setCopiedAt(Date.now())
                     }}
                     aria-label={copied ? 'คัดลอกรหัสทีมแล้ว' : 'คัดลอกรหัสทีม'}
                     data-on={copied}
@@ -180,7 +202,8 @@ export default function MyTeam() {
             <div
               ref={tabsRef}
               role="tablist"
-              className="relative flex flex-wrap items-center gap-2"
+              className="auth-rise relative flex flex-wrap items-center gap-2"
+              data-rise="2"
             >
               {MEMBERS.map((member, i) => {
                 const on = i === active
@@ -222,10 +245,31 @@ export default function MyTeam() {
               )}
             </div>
 
-            <PersonDetails person={person} />
+            {/*
+             * Two wrappers, and they cannot be one. The outer is the page entrance's fourth
+             * region and must animate exactly once, at mount. The inner is keyed on the
+             * active tab so React remounts it and the cross-fade keyframe replays on every
+             * switch — the indicator above slides for 220ms while the panel under it used to
+             * change in a single frame, which made the smoothest interaction on the site
+             * point at the hardest cut. Both classes set `animation`, so sharing one element
+             * would let the entrance's higher-specificity rule win and the cross-fade would
+             * never run at all — and a keyed `auth-rise` would re-play the 160ms entrance on
+             * every tab click.
+             *
+             * `.mm-panel` is 220ms, the indicator's own duration, so the two are one gesture.
+             * The height is deliberately not animated: the advisor drops the birth-date
+             * column and the document lists differ, so the panel's height varies by over
+             * 100px, and transitioning that would relayout the whole dashboard column for
+             * the length of the fade. The height snaps under the fade instead.
+             */}
+            <div className="auth-rise auth-rise-sm w-full" data-rise="3">
+              <div key={active} className="mm-panel w-full">
+                <PersonDetails person={person} />
+              </div>
+            </div>
           </div>
 
-          <div className="w-full shrink-0 lg:w-[400px]">
+          <div className="auth-rise w-full shrink-0 lg:w-[400px]" data-rise="4">
             <StatusPanel status={status} showDiscord={status === 'qualified'} />
           </div>
         </div>

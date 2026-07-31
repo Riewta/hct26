@@ -1,9 +1,9 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import GoogleLogo from '../GoogleLogo'
 import { WizardBackdrop } from '../AuthBackdrop'
 import ScrollEdgeEffect from '../ScrollEdgeEffect'
-import { authLink, useAuthBackLink } from './wizardNav'
+import { authLink, useAuthBackLink, useAuthNavigate } from './wizardNav'
 
 export const TOTAL_STEPS = 5
 
@@ -66,7 +66,7 @@ export default function WizardShell({
          * whole flow rather than one per screen.
          */}
         <header className="auth-topbar flex items-center justify-between gap-4 rounded-[24px] bg-white p-4 shadow-soft lg:p-5">
-          <Link to="/">
+          <Link to="/" className="mm-press">
             <img
               src="/assets/figma/95f39e217dc710a779c3c0b6cf30b3a377d857f5.png"
               alt="BangMod Hackathon 2026"
@@ -75,7 +75,7 @@ export default function WizardShell({
           </Link>
           <button
             type="button"
-            className="flex items-center justify-center gap-4 rounded-[12px] border border-[#dcdcdc] bg-white py-3 pr-4 pl-5 text-lg leading-[1.4] transition-colors hover:border-brand-red lg:text-xl"
+            className="mm-press flex items-center justify-center gap-4 rounded-[12px] border border-[#dcdcdc] bg-white py-3 pr-4 pl-5 text-lg leading-[1.4] transition-colors hover:border-brand-red lg:text-xl"
           >
             <GoogleLogo />
             <span className="hidden sm:inline">ชื่อบัญชีผู้ใช้</span>
@@ -130,16 +130,23 @@ export default function WizardShell({
             >
               {Array.from({ length: TOTAL_STEPS }, (_, i) => (
                 /*
-                 * The segment this step just reached sweeps in from its left edge instead
-                 * of already being filled — the beat that tells the user the step counted.
-                 * `key` includes the step so React builds a fresh element each hop and the
-                 * animation actually replays. See `.wizard-progress-fill` in auth-motion.css.
+                 * The segment this step just reached sweeps in from its left edge instead of
+                 * already being filled — the beat that tells the user the step counted.
+                 *
+                 * `key={i}`, deliberately, where it used to churn the active segment's key to
+                 * force a keyframe to replay. That replay was the bug: ถัดไป and ย้อนกลับ are
+                 * adjacent, and a double-tap restarted the sweep from zero while the segment
+                 * that was mid-sweep snapped to full. `data-filled` drives a *transition*
+                 * instead (see `.wizard-progress-fill` in auth-motion.css), which retargets
+                 * from wherever the fill currently is; `data-sweep` marks the one segment that
+                 * should still draw itself on from empty when the whole bar is freshly mounted,
+                 * which is every hop that crosses a route boundary.
                  */
                 <span
-                  key={i === step - 1 ? `active-${step}` : i}
-                  className={`h-full flex-1 rounded-full ${
-                    i < step ? 'bg-brand-red' : 'bg-[#e6e6e6]'
-                  } ${i === step - 1 ? 'wizard-progress-fill' : ''}`}
+                  key={i}
+                  data-filled={i < step}
+                  data-sweep={i === step - 1}
+                  className="wizard-progress-fill h-full flex-1 rounded-full bg-[#e6e6e6]"
                 />
               ))}
             </div>
@@ -174,11 +181,15 @@ export default function WizardShell({
 
 /**
  * Figma's step buttons: rounded-12, a 12 gap and asymmetric padding around the icon.
- * The `active:scale-[0.97]` is not from Figma — a pressable control has to confirm it
- * heard the press, and 160ms is the window where that still reads as instant.
+ *
+ * The press is not from Figma — a pressable control has to confirm it heard the press. It
+ * used to be typed out here as `transition-[opacity,transform] duration-[160ms] ease-out
+ * active:scale-[0.97]`, which is `mm-press` written by hand at a different duration to the
+ * same gesture everywhere else in the app; the class is the one definition, at 110ms, and it
+ * carries its own reduced-motion guard.
  */
 const STEP_BUTTON =
-  'flex items-center justify-center gap-3 rounded-[12px] bg-brand-red py-4 text-lg leading-[1.4] font-medium text-white transition-[opacity,transform] duration-[160ms] ease-out hover:opacity-90 active:scale-[0.97] motion-reduce:active:scale-100 lg:text-xl'
+  'mm-press flex items-center justify-center gap-3 rounded-[12px] bg-brand-red py-4 text-lg leading-[1.4] font-medium text-white transition-opacity hover:opacity-90 lg:text-xl'
 
 export function BackButton({ to }: { to: string }) {
   const authBack = useAuthBackLink()
@@ -214,11 +225,53 @@ export function NextButton({ to, label = 'ถัดไป' }: { to: string; labe
  * The terms step's submit: same pill, no icon, so the padding is symmetric. It flags
  * `submit` rather than `forward` because it leaves the wizard — the pasta has to spill
  * back out and the colour blocks have to return (styles/auth-motion.css).
+ *
+ * A `<button>` rather than a `<Link>`, because pressing the control that submits a
+ * registration should not be indistinguishable from following a link. It still only
+ * navigates — there is no network call in this flow yet, and inventing one is not this
+ * track's job — but it now flips `data-busy`/`aria-busy` on the press, which swaps the label
+ * for a spinner in place and takes pointer events off the pill so the submit cannot be fired
+ * twice. The moment a real handler exists, the pending state it needs is already here.
+ *
+ * The spinner is two arcs of one 20px circle rather than a full ring: the gap is what makes
+ * rotation legible at all. `relative` plus an absolutely-positioned spinner so the swap
+ * cannot change the pill's width — a button that resizes as it commits reads as a layout bug.
  */
 export function SubmitButton({ to, label }: { to: string; label: string }) {
+  const go = useAuthNavigate()
+  const [busy, setBusy] = useState(false)
+
   return (
-    <Link {...authLink(to, 'submit')} className={`${STEP_BUTTON} ml-auto px-6`}>
-      {label}
-    </Link>
+    <button
+      type="button"
+      data-busy={busy}
+      aria-busy={busy}
+      onClick={() => {
+        setBusy(true)
+        go(to, 'submit')
+      }}
+      className={`auth-submit relative ${STEP_BUTTON} ml-auto px-6`}
+    >
+      <span className="auth-submit-label">{label}</span>
+      <span
+        aria-hidden
+        className="auth-submit-spin pointer-events-none absolute inset-0 flex items-center justify-center"
+      >
+        <svg viewBox="0 0 20 20" fill="none" className="auth-submit-spinner size-5">
+          <path
+            d="M10 2a8 8 0 0 1 8 8"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M10 18a8 8 0 0 1-8-8"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+        </svg>
+      </span>
+    </button>
   )
 }

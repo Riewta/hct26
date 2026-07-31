@@ -61,21 +61,38 @@ const SOCIALS = [
  * The 28px badge drops to the 16px glyph, keeping Figma's 6px ring padding. The wrapper is
  * a fixed 32px box at full size and an auto-width 32-tall box when compact, exactly as the
  * design's "Layout Container" is authored.
+ *
+ * A badge is the one thing on this screen that changes meaning while the user is looking at
+ * it — a step goes from pending to done — and it used to teleport: the pill's tint class and
+ * the glyph asset both swapped in a single frame, so a review completing read as a glitch
+ * rather than as progress. Two fixes, both cheap:
+ *
+ * - `transition-colors` on the pill, so the 10% fill and 20% ring interpolate to the new
+ *   tone instead of cutting. This covers every tone pair.
+ * - `mm-swap` on the pill, with the tone's own glyph and the check both permanently mounted
+ *   in one grid cell. Nothing mounts or unmounts, so the completing transition — pending,
+ *   alert or failed → ok, the direction a status actually travels — cross-fades on
+ *   micro-motion's shared curve, the same way the copy button's tick does. Both layers are
+ *   given the same box, so the pill's size is byte-for-byte what it was before.
  */
 function Badge({ tone, compact = false }: { tone: StepTone; compact?: boolean }) {
   const { skin, icon } = BADGE[tone]
   const small = compact || tone === 'failed'
   const glyph = small ? 16 : BADGE[tone].glyph
   const src = small && tone === 'pending' ? ICON.dot16 : icon
+  const done = tone === 'ok'
+  const box = { width: glyph, height: glyph }
 
   return (
     <span
       className={`flex shrink-0 items-center p-[4px] ${small ? 'h-[32px]' : 'size-[32px] justify-center'}`}
     >
       <span
-        className={`flex shrink-0 items-center justify-center rounded-full border p-[6px] ${skin}`}
+        data-on={done}
+        className={`mm-swap shrink-0 rounded-full border p-[6px] transition-colors ${skin}`}
       >
-        <img src={src} alt="" aria-hidden style={{ width: glyph, height: glyph }} />
+        <img src={src} alt="" aria-hidden className="mm-swap-off" style={box} />
+        <img src={ICON.check} alt="" aria-hidden className="mm-swap-on" style={box} />
       </span>
     </span>
   )
@@ -96,10 +113,18 @@ function Row({ title, label, tone }: { title: string; label: string; tone: StepT
 /**
  * Figma's hairline is an inside stroke, so it must not grow the card past its 59px content
  * height the way a CSS border would — an inset ring draws it in place instead.
+ *
+ * `rise` continues the page's entrance ladder into the panel so the timeline builds
+ * downward, one step after another, rather than the two-to-four steps landing as one slab.
+ * It is the shared auth cascade — see pages/MyTeam.tsx — at the short 14px distance, since
+ * a step is a line of copy and not a card.
  */
-function Step({ step }: { step: StatusStep }) {
+function Step({ step, rise }: { step: StatusStep; rise: number }) {
   return (
-    <div className="flex w-full flex-col gap-[12px] rounded-[12px] p-[10px] shadow-[inset_0_0_0_0.5px_#dcdcdc]">
+    <div
+      className="auth-rise auth-rise-sm flex w-full flex-col gap-[12px] rounded-[12px] p-[10px] shadow-[inset_0_0_0_0.5px_#dcdcdc]"
+      data-rise={rise}
+    >
       <div className={`flex gap-[12px] ${step.rows ? 'items-start' : 'items-center'}`}>
         <Badge tone={step.tone} compact={step.compact} />
 
@@ -178,14 +203,23 @@ export default function StatusPanel({
             <p className="fl-14 leading-normal text-gray-2">อัปเดตล่าสุดเมื่อ {TEAM.updatedAt}</p>
           </div>
 
-          {STATUS_STEPS[status].map((step) => (
-            <Step key={step.title} step={step} />
+          {/* the ladder tops out at 7, which is the last delay auth-motion.css defines */}
+          {STATUS_STEPS[status].map((step, i) => (
+            <Step key={step.title} step={step} rise={Math.min(i + 3, 7)} />
           ))}
         </div>
       </div>
 
+      {/*
+       * The Discord card only exists for a qualified team, and it used to appear and vanish
+       * with no transition at all — a 20px-radius card materialising under the status panel
+       * in one frame, which reads as a layout bug rather than as a reward being handed over.
+       * `mm-card-in` lifts and settles it (280ms, 8px, 0.98 → 1). Only the entrance is
+       * animated: the unmount is a route change away, where the page transition owns the
+       * exit, so there is nothing here to hold open.
+       */}
       {showDiscord && (
-        <div className="flex w-full flex-col items-start rounded-[20px] bg-white p-4 shadow-soft">
+        <div className="mm-card-in flex w-full flex-col items-start rounded-[20px] bg-white p-4 shadow-soft">
           <div className="flex w-full flex-col items-start gap-4">
             <div className="flex w-full flex-col items-start">
               <p className="w-full fl-20 leading-[1.4] font-medium">{DISCORD_CARD.title}</p>

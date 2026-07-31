@@ -1,13 +1,26 @@
 import Mark2024 from './Mark2024'
 import ScrollEdgeEffect from './ScrollEdgeEffect'
+import { useReveal } from '../hooks/useReveal'
 import type { PastEvent } from '../pastEventsData'
 
 export default function PastEventCard({ event }: { event: PastEvent }) {
   const { photoCrop, logo } = event
 
+  /*
+   * Each card observes itself. The three of them used to share one `reveal-group` on the
+   * column in pages/PastEvents.tsx, and at 800 tall apiece that meant cards two and three
+   * were told to animate while they were a screen and a half below the fold — measured at
+   * 1.39 and 2.33 of the viewport at 1440. There is no stagger to keep: nothing this tall
+   * is ever on screen with its neighbour.
+   */
+  const reveal = useReveal<HTMLElement>()
+
   return (
     // Figma: every card is a fixed 1200x800 tile, 40 of padding, 73 between the two columns
-    <article className="relative flex flex-col gap-8 overflow-hidden rounded-[40px] p-6 md:flex-row md:items-start lg:h-[800px] lg:gap-[73px] lg:p-10">
+    <article
+      ref={reveal.ref}
+      className={`relative flex flex-col gap-8 overflow-hidden rounded-[40px] p-6 md:flex-row md:items-start lg:h-[800px] lg:gap-[73px] lg:p-10 ${reveal.cls}`}
+    >
       {photoCrop ? (
         // Figma frames the 2025 shot wider than the card and slides it left
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">

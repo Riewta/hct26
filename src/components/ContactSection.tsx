@@ -62,7 +62,18 @@ export default function ContactSection() {
             <a
               key={channel.label}
               href={channel.href}
-              className="mm-press flex items-center gap-4 transition-opacity hover:opacity-80"
+              /*
+               * A colour tint rather than an opacity dim, which is the same hover the footer's
+               * social rows have — and the only one available here. These two links are
+               * `reveal-group` children, so `opacity` belongs to the reveal: the (unlayered)
+               * `.reveal.is-visible { opacity: 1 }` in index.css beats a layered Tailwind
+               * `hover:opacity-80` outright, which is why the dim measured `opacity: 1` on
+               * hover both before and after this round. Claiming opacity back would mean
+               * either an `!important` or a 600ms hover fade, since the reveal's own opacity
+               * transition is 600ms; `color` is in the same transition list at `--mm-fast` and
+               * costs nothing.
+               */
+              className="mm-link mm-press flex items-center gap-4 hover:text-brand-red"
             >
               {/* Figma pads each glyph inside an 80 box, so the label always lands at 96 */}
               <span className="mm-icon-pop flex size-[calc(48px_+_32*var(--fl))] shrink-0 items-center justify-center rounded-xl">

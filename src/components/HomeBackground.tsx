@@ -429,10 +429,43 @@ function flowVars(i: number, x: number, fluid = false): CSSProperties {
   const out = x >= PILE_X ? 1 : -1
   // neighbours orbit opposite ways, so the band breathes rather than drifting as one body
   const spin = i % 2 ? 1 : -1
-  const delay = i * 95
+  /*
+   * 48ms, not 95. The band sits above the fold on `/`, so it starts at load alongside the
+   * hero's own cascade — and the hero is settled by ~740ms. At 95ms the twentieth tube had
+   * not even started travelling until 1805ms and the band kept arriving until 4145ms, so
+   * the copy finished, waited, and the wallpaper carried on assembling behind it. Halving
+   * the step puts the last start at 912ms and the last landing at ~3.25s, which lands the
+   * band's centre of mass in the same second as the hero. Every other ladder in this
+   * codebase is 20-70ms; 95 was the outlier.
+   *
+   * `duration` is untouched on purpose: that is the per-tube travel time, and it is what
+   * reads as weight — a tube crossing 500px in less than 1.8s is thrown, not drifting.
+   * Only the gap between neighbours got tighter.
+   */
+  const delay = i * 48
   const duration = 1800 + ((i * 137) % 5) * 180
   /** canvas units → the band's own unit */
   const u = (v: number) => (fluid ? `${((v / CANVAS) * 100).toFixed(4)}vw` : `${v}px`)
+
+  /*
+   * The idle amplitudes are the one thing here that does NOT go through `u`, and the reason
+   * is that the two motions are different kinds of quantity.
+   *
+   * The arrival is a journey: a tube crosses a distance proportional to its own artwork, so
+   * a phone tube — a quarter the size — should fly a quarter as far, and `u` emitting `vw`
+   * inside the fluid band is exactly right.
+   *
+   * The idle is not a journey, it is a perceptual nudge: the smallest movement that reads as
+   * "alive" is a property of the eye, not of the artwork, and it does not shrink with the
+   * viewport. Sent through `u` these figures became 0.347vw..0.847vw, which at 390 is a
+   * 1.4-3.3px peak spread over 17-32 seconds — at or under the threshold of noticing. The
+   * phone was paying for twenty permanent composited animations and getting nothing visible
+   * back, which is the precise complaint this round exists to answer. In px they read on a
+   * phone the way they read on a desktop.
+   *
+   * Rotation needs no equivalent: an angle is already scale-free.
+   */
+  const nudge = (v: number) => `${+v.toFixed(2)}px`
 
   return {
     '--pasta-dx': u(-(440 + ((i * 89) % 7) * 55)),
@@ -445,8 +478,8 @@ function flowVars(i: number, x: number, fluid = false): CSSProperties {
     '--pasta-duration': `${duration}ms`,
     '--pasta-idle-delay': `${delay + duration}ms`,
     '--pasta-idle-duration': `${17000 + ((i * 61) % 9) * 1900}ms`,
-    '--pasta-idle-x': u(spin * (5 + ((i * 43) % 5) * 1.8)),
-    '--pasta-idle-y': u(3 + ((i * 29) % 4) * 1.6),
+    '--pasta-idle-x': nudge(spin * (5 + ((i * 43) % 5) * 1.8)),
+    '--pasta-idle-y': nudge(3 + ((i * 29) % 4) * 1.6),
     '--pasta-idle-r': `${spin * (1.1 + ((i * 23) % 4) * 0.5)}deg`,
   } as CSSProperties
 }

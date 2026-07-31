@@ -64,6 +64,30 @@
   transition: color var(--mm-fast) var(--mm-ease);
 }
 
+/* ------------------------------------------------- the pressables' colour half
+ * `transition` is a SHORTHAND, so a second `transition` declaration on the same element
+ * replaces the first outright — the two lists never merge. That is the whole reason this
+ * block exists as its own rule rather than being folded into the `.mm-press` rule inside
+ * the motion guard below: the guarded rule has to restate colour and opacity alongside
+ * translate and scale, and this rule is what is left when the guard does not apply.
+ *
+ * It is also the fix for a defect that hit twenty call sites. `@import 'tailwindcss'`
+ * puts every utility in `@layer utilities`, and an UNLAYERED declaration beats a layered
+ * one whatever its specificity — so `.mm-press { transition: transform … }` was silently
+ * winning over the `transition-opacity` / `transition-colors` utility written beside it on
+ * the element, and `transition-property` came out as the single value `transform`. Every
+ * `hover:opacity-90` and `hover:border-brand-red` in the app was landing in one frame.
+ * Fixing it centrally here is what lets those call sites keep the utility they already
+ * wrote — none of them has to win the cascade, because nothing is fighting them any more. */
+.mm-press,
+.mm-press-icon {
+  transition:
+    color var(--mm-fast) var(--mm-ease),
+    background-color var(--mm-fast) var(--mm-ease),
+    border-color var(--mm-fast) var(--mm-ease),
+    opacity var(--mm-fast) var(--mm-ease);
+}
+
 /* -------------------------------------------------------------- two-state icons
    Hamburger↔close, copy↔tick. Both glyphs are stacked in one grid cell and cross-fade,
    so the button never reflows and the swap has no empty frame. */
@@ -157,39 +181,61 @@
   }
 
   /* Press feedback. Scale, not colour, because it must land on pointer-down and read
-     the same on every surface. */
+     the same on every surface.
+   *
+   * EVERY interaction transform in this file is written as `translate` / `scale` — the
+   * individual transform properties — and never as the `transform` shorthand. Same reason
+   * `.team-decor-stage` and the pasta bands already do it (index.css, pasta-motion.css):
+   * `transform` is one property, so whoever writes it last wins the whole thing, and on
+   * these elements someone else is always writing it. The scroll reveal is the case that
+   * bit: `.reveal.is-visible` / `.reveal-group.is-visible > *` set `transform: none` at
+   * 0-2-0 from a sheet that loads after this one, which beat `.mm-lift:hover` (0-2-0) and
+   * `.mm-press:active` (0-1-0) outright — the three `/guide` cards and the two contact
+   * channels measured `transform: none` on hover, so their 4px lift never happened at all.
+   * `translate` and `scale` are separate properties that compose in a fixed order, so the
+   * reveal can own `transform` and the interaction can own its own axis, and neither has
+   * to out-specify the other. */
   .mm-press,
   .mm-press-icon {
-    transition: transform var(--mm-press) var(--mm-ease-out);
+    transition:
+      translate var(--mm-press) var(--mm-ease-out),
+      scale var(--mm-press) var(--mm-ease-out),
+      color var(--mm-fast) var(--mm-ease),
+      background-color var(--mm-fast) var(--mm-ease),
+      border-color var(--mm-fast) var(--mm-ease),
+      opacity var(--mm-fast) var(--mm-ease);
   }
 
   .mm-press:active {
-    transform: scale(0.97);
+    scale: 0.97;
   }
 
   /* small icon-only controls need a deeper scale to register at all */
   .mm-press-icon:active {
-    transform: scale(0.9);
+    scale: 0.9;
   }
 
   /* Press feedback for a full-width trigger (an accordion row), where scaling the whole
      row would shift the copy under the reader's eye: the glyph takes the press instead. */
   .mm-press-child {
-    transition: transform var(--mm-press) var(--mm-ease-out);
+    transition: scale var(--mm-press) var(--mm-ease-out);
   }
 
   :is(a, button):active .mm-press-child {
-    transform: scale(0.88);
+    scale: 0.88;
   }
 
   .mm-lift {
-    transition: transform var(--mm-base) var(--mm-ease-out);
+    transition: translate var(--mm-base) var(--mm-ease-out);
   }
 
   .mm-arrow-shift,
-  .mm-arrow-down,
+  .mm-arrow-down {
+    transition: translate var(--mm-fast) var(--mm-ease-out);
+  }
+
   .mm-icon-pop {
-    transition: transform var(--mm-fast) var(--mm-ease-out);
+    transition: scale var(--mm-fast) var(--mm-ease-out);
   }
 
   /* Tab indicator. The bar is one element positioned by an inline transform, so the
@@ -220,19 +266,233 @@
 
 @media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
   .mm-lift:hover {
-    transform: translateY(-4px);
+    translate: 0 -4px;
   }
 
   /* an arrow that points out of the button leans in the direction it points */
   :is(a, button):hover .mm-arrow-shift {
-    transform: translate(3px, -3px);
+    translate: 3px -3px;
   }
 
   :is(a, button):hover .mm-arrow-down {
-    transform: translateY(3px);
+    translate: 0 3px;
   }
 
-  :is(a, button):hover .mm-icon-pop {
-    transform: scale(1.08);
+  /* `:not(:active)` so a glyph that is BOTH the hover cue and the press cue — the FAQ
+     toggle carries `mm-icon-pop` and `mm-press-child` — still shrinks under the finger.
+     The hover block loads after the press rules, so without this the pop would win. */
+  :is(a, button):hover:not(:active) .mm-icon-pop {
+    scale: 1.08;
+  }
+}
+
+/* ------------------------------------------------------------- shared enters
+   Two one-shot arrivals used by the panels and cards other tracks own. They live here
+   rather than beside their call sites because both are the same gesture as the scroll
+   reveal — a short rise on the shared ease-out — and there should be one copy of it.
+   `backwards` on the panel and `both` on the card: a panel is mounted and then left
+   alone, while a card may be given a delay and must hold its start frame through it. */
+@media (prefers-reduced-motion: no-preference) {
+  .mm-panel {
+    animation: mm-panel-in var(--mm-base) var(--mm-ease-out) backwards;
+  }
+
+  .mm-card-in {
+    animation: mm-card-in 280ms var(--mm-ease-out) both;
+  }
+}
+
+@keyframes mm-panel-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes mm-card-in {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+    scale: 0.98;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+/* =========================================================== the nav's scrolled state
+   The pill and its progressive-blur band are painted on every page at every offset, so
+   at the top of a page the seven-layer backdrop stack was fading nothing and the pill sat
+   on the page looking exactly as it does 4000px down. `data-scrolled` is written by Navbar
+   from a rAF-throttled passive scroll listener; the band only exists once there is
+   something behind it to soften, which is also seven fewer backdrop layers to composite
+   for the whole of every page's first screen. */
+@media (prefers-reduced-motion: no-preference) {
+  .site-nav {
+    transition: box-shadow var(--mm-base) var(--mm-ease);
+  }
+
+  .site-nav-band {
+    opacity: 0;
+    transition: opacity var(--mm-base) var(--mm-ease);
+  }
+
+  [data-scrolled='true'] .site-nav-band {
+    opacity: 1;
+  }
+}
+
+/* The pill lifts off the page as it starts to overlap content. Same 40px spread as
+   `--shadow-soft`, twice the alpha — read as "closer", not as a different shadow. */
+[data-scrolled='true'] .site-nav {
+  box-shadow: 0 0 40px rgb(0 0 0 / 0.1);
+}
+
+/* ============================================== the marketing pages' page transition
+ * `/`, `/guide` and `/hall-of-fame` share one `SiteLayout`, so the nav and the footer are
+ * literally the same DOM on all three — and yet crossing between them was a hard cut, in
+ * an app whose auth flow morphs. Naming the two persistent pieces and pinning them lets
+ * the browser see what the markup already says: only the page body changed.
+ *
+ * EVERYTHING here is gated on `:root[data-site-nav='marketing']`, which App.tsx sets from
+ * a router subscriber and only ever for a navigation whose start and end are both
+ * marketing routes. That gate is not decoration — auth-motion.css owns
+ * `::view-transition-*(root)` for the sign-in morph and the wizard hops, including one
+ * unconditional `::view-transition-group(root)` rule, and two sheets quietly re-timing the
+ * same pseudo-element is how a morph starts drifting. With the gate, the two rule sets are
+ * mutually exclusive by construction: on any navigation that touches an auth route the
+ * attribute is absent, nothing below matches, and the auth choreography is the only thing
+ * in play. `view-transition-name` is gated too, so outside a marketing→marketing hop no
+ * element is even named and the snapshot tree is byte-for-byte what it was before.
+ *
+ * Selector shape: `:root[…]::view-transition-group(x)` with NO space. The pseudo tree
+ * hangs off the document element itself, so a descendant combinator cannot reach it — the
+ * same trap auth-motion.css documents.
+ *
+ * Exit 200ms against a 320ms entry. Leaving should get out of the way; arriving is the
+ * event. That is the ratio the wizard steps already use. */
+@supports (view-transition-name: none) {
+  :root[data-site-nav='marketing'] .site-nav {
+    view-transition-name: site-nav;
+  }
+
+  :root[data-site-nav='marketing'] .site-footer {
+    view-transition-name: site-footer;
+  }
+
+  /* The one thing in the chrome that DOES move: the nav's active-item rule travels from
+     the old label to the new one. It has to be named out of the pinned pill, or it would
+     be baked into that snapshot and jump. Same duration and curve as the CSS transition
+     it replaces for the length of the hop. */
+  :root[data-site-nav='marketing'] .site-nav-indicator {
+    view-transition-name: site-nav-indicator;
+  }
+
+  :root[data-site-nav='marketing']::view-transition-group(site-nav-indicator) {
+    animation-duration: var(--mm-base);
+    animation-timing-function: var(--mm-ease-in-out);
+  }
+
+  :root[data-site-nav='marketing']::view-transition-old(site-nav-indicator),
+  :root[data-site-nav='marketing']::view-transition-new(site-nav-indicator) {
+    animation: none;
+  }
+
+  /* Pinned, not animated: the chrome is the same element on both sides, so the honest
+     reading is that it never moved. A zero-length group animation holds its geometry and
+     `animation: none` on the two snapshots stops the UA cross-fading a thing against
+     itself, which would show as a flicker on the shadow. */
+  :root[data-site-nav='marketing']::view-transition-group(site-nav),
+  :root[data-site-nav='marketing']::view-transition-group(site-footer) {
+    animation-duration: 0s;
+  }
+
+  :root[data-site-nav='marketing']::view-transition-old(site-nav),
+  :root[data-site-nav='marketing']::view-transition-new(site-nav),
+  :root[data-site-nav='marketing']::view-transition-old(site-footer),
+  :root[data-site-nav='marketing']::view-transition-new(site-footer) {
+    animation: none;
+  }
+
+  /* With the chrome named out of it, the root snapshot IS the page body — so the body is
+     what rises, and nothing else has to be named to say so. */
+  :root[data-site-nav='marketing']::view-transition-group(root) {
+    animation-duration: 320ms;
+    animation-timing-function: var(--mm-ease-out);
+  }
+
+  :root[data-site-nav='marketing']::view-transition-old(root) {
+    animation: mm-page-out 200ms var(--mm-ease) both;
+  }
+
+  :root[data-site-nav='marketing']::view-transition-new(root) {
+    animation: mm-page-in 320ms var(--mm-ease-out) both;
+  }
+
+  /* Reduced motion keeps the transition — a cross-fade is not movement — and drops the
+     travel. A backstop, not the live rule: auth-motion.css already clamps
+     `::view-transition-old(*)` / `new(*)` / `group(*)` under this query with `!important`,
+     which wins over anything here. Measured under `reducedMotion: 'reduce'`, the marketing
+     hop runs a 140ms fade with 1ms groups — which is what these three rules say, so the two
+     sheets agree on the answer whichever one is doing the talking. Scoped like everything
+     else in this block so it can never reach an auth route. */
+  @media (prefers-reduced-motion: reduce) {
+    :root[data-site-nav='marketing']::view-transition-group(root) {
+      animation-duration: 1ms;
+    }
+
+    :root[data-site-nav='marketing']::view-transition-old(root) {
+      animation: mm-page-fade-out 140ms linear both;
+    }
+
+    :root[data-site-nav='marketing']::view-transition-new(root) {
+      animation: mm-page-fade-in 140ms linear both;
+    }
+  }
+}
+
+@keyframes mm-page-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes mm-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes mm-page-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes mm-page-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }

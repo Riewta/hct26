@@ -103,6 +103,12 @@ type LiquidButtonProps = {
   className?: string
   /** goes on the decorative fill: the background paint */
   fillClassName?: string
+  /**
+   * Wrap the navigation in a view transition. `<Link>`'s own option, passed straight
+   * through — only meaningful alongside `to`, and off by default so a caller has to say
+   * that the screen it leads to is worth animating between.
+   */
+  viewTransition?: boolean
 }
 
 export default function LiquidButton({
@@ -112,6 +118,7 @@ export default function LiquidButton({
   onClick,
   className = '',
   fillClassName = '',
+  viewTransition = false,
 }: LiquidButtonProps) {
   const rootRef = useRef<HTMLElement | null>(null)
   const shiftRef = useRef<HTMLSpanElement | null>(null)
@@ -392,6 +399,7 @@ export default function LiquidButton({
           rootRef.current = node
         }}
         to={to}
+        viewTransition={viewTransition}
         className={`lq-btn ${className}`}
         onKeyDown={onKeyDown}
         {...handlers}

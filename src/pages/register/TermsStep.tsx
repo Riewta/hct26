@@ -1,37 +1,8 @@
 import { useState } from 'react'
 import WizardShell, { BackButton, SubmitButton } from '../../components/form/WizardShell'
+import { CheckMark } from '../../components/form/Field'
 import PolicyModal from '../../components/PolicyModal'
 import { CONSENTS, REQUIRED_DOCUMENTS } from '../../registrationData'
-
-/**
- * Figma ships the tick as a flat SVG export, but a tick is the one glyph in this flow that
- * marks a decision, so it is inlined here and drawn on instead — the stroke travels the
- * path in 260ms (see `.auth-check-path` in styles/auth-motion.css). Geometry matches the
- * export: a 16-unit box, a 2-unit round stroke, the corner at the lower third.
- *
- * It animates on mount, and every call site renders it only while its state is chosen, so
- * each new choice draws a new tick rather than reusing a finished one.
- */
-function CheckMark({ className = 'size-4' }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      fill="none"
-      aria-hidden
-      className={className}
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        className="auth-check-path"
-        d="M3.5 8.5L6.5 11.5L12.5 4.5"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
 
 /**
  * Figma 708:1952. Two groups of rounded-16 rows: mandatory documents that open a modal,
@@ -72,9 +43,18 @@ function Row({
   )
 }
 
-/** Radio pair styled as the design's 24 check boxes — unchecked is an empty outline. */
+/**
+ * Radio pair styled as the design's 24 check boxes — unchecked is an empty outline.
+ *
+ * `touched` is what stops the tick drawing itself for a default nobody chose. The row arrives
+ * with ยอมรับ pre-selected, so on entry every consent row used to draw its tick at once,
+ * unstaggered, over the incoming step transition — the one animation in the flow whose stated
+ * job is to say "you decided", firing on page load. It is now set from the change handler, so
+ * the tick is simply *there* on arrival and travels only for a real choice. No timing changed.
+ */
 function ConsentChoice({ name }: { name: string }) {
   const [value, setValue] = useState<'yes' | 'no'>('yes')
+  const [touched, setTouched] = useState(false)
 
   return (
     <div className="flex shrink-0 items-center gap-6 lg:gap-10">
@@ -84,20 +64,24 @@ function ConsentChoice({ name }: { name: string }) {
           ['no', 'ไม่ยอมรับ'],
         ] as const
       ).map(([key, label]) => (
-        <label key={key} className="flex cursor-pointer items-center gap-3">
+        <label key={key} className="mm-press flex cursor-pointer items-center gap-3">
           <input
             type="radio"
             name={name}
             checked={value === key}
-            onChange={() => setValue(key)}
+            onChange={() => {
+              setValue(key)
+              setTouched(true)
+            }}
             className="sr-only"
           />
+          {/* the box used to swap fill for outline in one frame, under a tick taking 260ms */}
           <span
-            className={`flex size-6 items-center justify-center rounded-[6px] p-1 ${
+            className={`flex size-6 items-center justify-center rounded-[6px] p-1 transition-colors ${
               value === key ? 'bg-brand-red' : 'border border-[#dcdcdc]'
             }`}
           >
-            {value === key && <CheckMark className="size-4 text-white" />}
+            {value === key && <CheckMark className="size-4 text-white" drawn={touched} />}
           </span>
           <span className="text-lg leading-[1.4] lg:text-xl">{label}</span>
         </label>
@@ -158,13 +142,17 @@ export default function TermsStep() {
                         y: box.top + box.height / 2,
                       })
                     }}
-                    className={`flex shrink-0 items-center justify-center gap-2 rounded-[12px] px-6 py-3 text-lg leading-[1.4] transition-colors lg:text-xl ${
+                    /* `mm-press` matters here more than anywhere: this is the element the
+                       policy sheet measures `--auth-origin-x/y` from, so the sheet grows out
+                       of exactly the control the press has to be felt in. */
+                    className={`mm-press flex shrink-0 items-center justify-center gap-2 rounded-[12px] px-6 py-3 text-lg leading-[1.4] transition-colors lg:text-xl ${
                       isAccepted
                         ? 'bg-brand-red text-white'
                         : 'bg-brand-red/10 text-brand-red hover:bg-brand-red/20'
                     }`}
                   >
-                    {isAccepted && <CheckMark />}
+                    {/* accepting a policy in the sheet is a decision, so this one does draw */}
+                    {isAccepted && <CheckMark drawn />}
                     {isAccepted ? 'ยอมรับแล้ว' : 'อ่านและยอมรับ'}
                   </button>
                 </Row>

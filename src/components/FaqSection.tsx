@@ -9,7 +9,11 @@ import { useReveal } from '../hooks/useReveal'
  */
 function ToggleIcon({ open }: { open: boolean }) {
   return (
-    <span aria-hidden className="mm-press-child relative block size-8 shrink-0">
+    /* `mm-icon-pop` as well as `mm-press-child`: the row is a ~700px-wide button whose only
+       feedback was the press, so on the way to it there was nothing to say it was a control.
+       The glyph swells on hover and shrinks on press — the same pair the footer's social
+       rows use. */
+    <span aria-hidden className="mm-press-child mm-icon-pop relative block size-8 shrink-0">
       <img
         src="/assets/figma/0e681a2a1d4944287c14f80f1e46ef1bd044ab87.svg"
         alt=""
@@ -26,6 +30,76 @@ function ToggleIcon({ open }: { open: boolean }) {
 }
 
 /**
+ * One question, revealing itself.
+ *
+ * The list is taller than the viewport at every width, so it cannot share one trigger: as a
+ * `reveal-group` the rows measured 0.91 / 1.05 / 1.22 of the viewport at 1440 at the frame
+ * they were told to animate, i.e. three of the four spent their arrival below the fold. Same
+ * fix as the scope cards and the prizes — a reveal per row, with the 70ms ladder carried
+ * inline as `--reveal-delay` so it survives the split (index.css).
+ */
+function FaqRow({
+  faq,
+  i,
+  open,
+  onToggle,
+}: {
+  faq: (typeof FAQS)[number]
+  i: number
+  open: boolean
+  onToggle: () => void
+}) {
+  const reveal = useReveal()
+
+  return (
+    /*
+     * One real box per question, and the rule between two questions is a border on the lower
+     * one rather than a separator element beside it.
+     *
+     * This used to be a `<div className="contents">` holding a separator and the row, which
+     * made the whole list's reveal a no-op: `display: contents` generates no box, so
+     * `opacity`, `transform` and every `transition-delay` the group handed these children were
+     * simply dropped. Measured: all four children `display: "contents"`, `opacity: "0"`,
+     * `transform: "none"` — fully visible on screen with nothing to animate — while the
+     * heading beside them revealed normally. On the largest block of `/guide` the title moved
+     * and the questions did not.
+     *
+     * The spacing is unchanged to the half-pixel. The `<dl>` keeps its own gap, and a row
+     * after the first adds the border plus a top pad of that same gap, which is exactly what
+     * the zero-height separator sitting between two gaps came to.
+     */
+    <div
+      ref={reveal.ref}
+      style={{ '--reveal-delay': `${i * 70}ms` } as React.CSSProperties}
+      className={`flex flex-col ${
+        i > 0 ? 'border-t-[0.5px] border-brand-yellow pt-[calc(24px_+_16*var(--fl))]' : ''
+      } ${reveal.cls}`}
+    >
+      <dt>
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={open}
+          className="mm-link fl-title-sm flex w-full items-center gap-6 text-left leading-[1.4] font-medium hover:text-brand-red"
+        >
+          <span className="flex-1">{faq.q}</span>
+          <ToggleIcon open={open} />
+        </button>
+      </dt>
+      {/*
+       * The answer stays mounted and its grid row collapses to 0fr, so closing animates as
+       * well as opening. The 16 gap Figma puts between question and answer lives inside the
+       * clipped row as padding — as a flex gap it would survive the collapse and leave a hole
+       * under a closed question.
+       */}
+      <dd className={`mm-collapse ${open ? 'is-open' : ''}`}>
+        <div className="fl-body pt-4 leading-[1.5]">{faq.a}</div>
+      </dd>
+    </div>
+  )
+}
+
+/**
  * Figma node 708:702 "Section / Features" — page y 2362, 1024 tall, 120 side padding,
  * a 500 title column and the questions sharing a 60 gap, both vertically centred. The
  * 124.705 pads are what centring a 774.59 row inside 1024 comes to.
@@ -35,7 +109,6 @@ export default function FaqSection() {
   // these open independently rather than as a one-at-a-time accordion.
   const [closed, setClosed] = useState<ReadonlySet<number>>(() => new Set())
   const head = useReveal()
-  const list = useReveal<HTMLDListElement>({ group: true })
 
   return (
     <section id="faq" className="shell sec-faq relative">
@@ -60,48 +133,22 @@ export default function FaqSection() {
           <div aria-hidden className="hidden aspect-[1736/2054] w-full lg:block" />
         </div>
 
-        <dl
-          ref={list.ref}
-          className={`flex flex-1 flex-col gap-[calc(24px_+_16*var(--fl))] ${list.cls}`}
-        >
-          {FAQS.map((faq, i) => {
-            const open = !closed.has(i)
-            return (
-              <div key={faq.q} className="contents">
-                {i > 0 && (
-                  <div role="presentation" className="h-0 border-t-[0.5px] border-brand-yellow" />
-                )}
-                <div className="flex flex-col">
-                  <dt>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setClosed((prev) => {
-                          const next = new Set(prev)
-                          if (!next.delete(i)) next.add(i)
-                          return next
-                        })
-                      }
-                      aria-expanded={open}
-                      className="fl-title-sm flex w-full items-center gap-6 text-left leading-[1.4] font-medium"
-                    >
-                      <span className="flex-1">{faq.q}</span>
-                      <ToggleIcon open={open} />
-                    </button>
-                  </dt>
-                  {/*
-                   * The answer stays mounted and its grid row collapses to 0fr, so closing
-                   * animates as well as opening. The 16 gap Figma puts between question and
-                   * answer lives inside the clipped row as padding — as a flex gap it would
-                   * survive the collapse and leave a hole under a closed question.
-                   */}
-                  <dd className={`mm-collapse ${open ? 'is-open' : ''}`}>
-                    <div className="fl-body pt-4 leading-[1.5]">{faq.a}</div>
-                  </dd>
-                </div>
-              </div>
-            )
-          })}
+        <dl className="flex flex-1 flex-col gap-[calc(24px_+_16*var(--fl))]">
+          {FAQS.map((faq, i) => (
+            <FaqRow
+              key={faq.q}
+              faq={faq}
+              i={i}
+              open={!closed.has(i)}
+              onToggle={() =>
+                setClosed((prev) => {
+                  const next = new Set(prev)
+                  if (!next.delete(i)) next.add(i)
+                  return next
+                })
+              }
+            />
+          ))}
         </dl>
       </div>
 
