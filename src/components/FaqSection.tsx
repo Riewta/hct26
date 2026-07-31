@@ -38,7 +38,7 @@ export default function FaqSection() {
   const list = useReveal<HTMLDListElement>({ group: true })
 
   return (
-    <section id="faq" className="relative px-4 py-20 lg:px-[120px] lg:py-[124.705px]">
+    <section id="faq" className="shell sec-faq relative">
       {/* Decoration: a #FFEAB4 blob far wider than the page, flipped and centred on the
           section — it is what tints this whole band cream. */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -49,10 +49,10 @@ export default function FaqSection() {
         />
       </div>
 
-      <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col gap-10 lg:flex-row lg:items-center lg:gap-[60px]">
+      <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col gap-[calc(40px_+_20*var(--fl))] lg:flex-row lg:items-center">
         <div
           ref={head.ref}
-          className={`flex flex-col gap-[60px] lg:w-[500px] lg:shrink-0 lg:self-stretch lg:justify-center ${head.cls}`}
+          className={`flex flex-col gap-[calc(40px_+_20*var(--fl))] lg:w-[calc(400px_+_100*var(--fl))] lg:shrink-0 lg:self-stretch lg:justify-center ${head.cls}`}
         >
           <SectionHeader number="03" title="คำถามที่พบบ่อย" />
           {/* Figma reserves the mascot's footprint in this column with a hidden copy of
@@ -60,7 +60,10 @@ export default function FaqSection() {
           <div aria-hidden className="hidden aspect-[1736/2054] w-full lg:block" />
         </div>
 
-        <dl ref={list.ref} className={`flex flex-1 flex-col gap-10 ${list.cls}`}>
+        <dl
+          ref={list.ref}
+          className={`flex flex-1 flex-col gap-[calc(24px_+_16*var(--fl))] ${list.cls}`}
+        >
           {FAQS.map((faq, i) => {
             const open = !closed.has(i)
             return (
@@ -80,7 +83,7 @@ export default function FaqSection() {
                         })
                       }
                       aria-expanded={open}
-                      className="flex w-full items-center gap-6 text-left text-xl leading-[1.4] font-medium lg:text-[28px]"
+                      className="fl-title-sm flex w-full items-center gap-6 text-left leading-[1.4] font-medium"
                     >
                       <span className="flex-1">{faq.q}</span>
                       <ToggleIcon open={open} />
@@ -93,7 +96,7 @@ export default function FaqSection() {
                    * survive the collapse and leave a hole under a closed question.
                    */}
                   <dd className={`mm-collapse ${open ? 'is-open' : ''}`}>
-                    <div className="pt-4 text-lg leading-[1.5] lg:text-2xl">{faq.a}</div>
+                    <div className="fl-copy pt-4 leading-[1.5]">{faq.a}</div>
                   </dd>
                 </div>
               </div>

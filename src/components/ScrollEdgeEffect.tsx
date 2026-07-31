@@ -39,6 +39,14 @@
  * - `plateBlur` — the radius at the solid edge, i.e. the strength of the whole effect.
  * - `flip`  — solid edge at the bottom instead of the top.
  * - `maskAlpha` — the "- Soft" variant's tint tops out at 0.9 rather than 1.
+ * - `tintReach` — how far down the band the tint is still doing anything, 0..1.
+ *
+ * The tint ramp is EASED, not linear. A linear alpha ramp puts half the plate's opacity at
+ * the middle of the band, which over a photograph reads as a fog covering the whole thing —
+ * the artwork disappears long before the ramp does. Figma's plate is a masked fill whose
+ * perceptual falloff is much closer to the solid edge, so the stops below follow
+ * `a0 * (1 - t/reach)^2`: at the halfway point that is a tenth of the peak rather than a
+ * half, which leaves the picture visible while still backing the copy at the solid edge.
  */
 const TINT = {
   light: '255 255 255',
@@ -54,18 +62,25 @@ const RATIO = 1.6
 /** Oversize factor: 1.8x the layer's own radius is past where a Gaussian tail still reads. */
 const OVERSIZE = 1.8
 
+/** Stops used to draw the eased tint ramp. 6 is smooth; CSS interpolates linearly between. */
+const TINT_STOPS = 6
+
 export default function ScrollEdgeEffect({
   className = '',
   flip = false,
   tone = 'light',
   plateBlur = 30,
   maskAlpha = 1,
+  tintReach = 1,
+  blurReach = 1,
 }: {
   className?: string
   flip?: boolean
   tone?: keyof typeof TINT
   plateBlur?: number
   maskAlpha?: number
+  tintReach?: number
+  blurReach?: number
 }) {
   // Solid edge: top by default (the nav effect is strongest at the very top of the page);
   // `flip` puts it at the bottom (the effect capping the bottom of an image). Mask fractions
@@ -73,6 +88,7 @@ export default function ScrollEdgeEffect({
   const towardOpenEdge = flip ? 'to top' : 'to bottom'
 
   const peak = plateBlur
+  const bReach = Math.min(Math.max(blurReach, 0.05), 1)
 
   // Weakest first so the strongest ends up on top, covering the region at the solid edge.
   const layers = Array.from({ length: LAYERS }, (_, n) => {
@@ -85,8 +101,12 @@ export default function ScrollEdgeEffect({
     // its own station and then hands over to the next-weaker one across the gap to that
     // one's station. The weakest layer has nothing to hand over to, so it fades to zero
     // exactly at the open edge — otherwise its (small) blur would end on a hard line.
-    const from = 1 - strength
-    const to = i === LAYERS - 1 ? 1 : 1 - RATIO ** -(i + 1)
+    // `bReach` compresses the whole ramp into the first fraction of the band: the shape is
+    // unchanged, it just finishes early and leaves the rest of the box untouched. That is
+    // what a caller reaches for when the band is tall enough that a full-height ramp would
+    // blur the artwork it is only supposed to be fading out of.
+    const from = (1 - strength) * bReach
+    const to = (i === LAYERS - 1 ? 1 : 1 - RATIO ** -(i + 1)) * bReach
 
     const pad = radius * OVERSIZE
     // f of the unpadded band, re-expressed inside the padded box (see header comment).
@@ -97,14 +117,26 @@ export default function ScrollEdgeEffect({
     return { radius, pad, mask }
   })
 
-  const tint = `linear-gradient(${towardOpenEdge}, rgb(${TINT[tone]} / ${(0.9 * maskAlpha).toFixed(
-    3,
-  )}) 0%, rgb(${TINT[tone]} / 0) 100%)`
+  const peakAlpha = 0.9 * maskAlpha
+  const reach = Math.min(Math.max(tintReach, 0.01), 1)
+  const tintStops = Array.from({ length: TINT_STOPS + 1 }, (_, n) => {
+    const t = (n / TINT_STOPS) * reach // fraction of the band, measured from the solid edge
+    const a = peakAlpha * (1 - n / TINT_STOPS) ** 2
+    return `rgb(${TINT[tone]} / ${a.toFixed(4)}) ${(t * 100).toFixed(2)}%`
+  })
+  // Past `reach` the tint is already zero, so no trailing stop is needed unless the ramp
+  // stops short of the open edge — then one pins it transparent for the remainder.
+  if (reach < 1) tintStops.push(`rgb(${TINT[tone]} / 0) 100%`)
+  const tint = `linear-gradient(${towardOpenEdge}, ${tintStops.join(', ')})`
 
   return (
     // overflow-hidden is load-bearing: it clips the oversized layers back to the design box
     // (and to the caller's rounded corners, which arrive on `className`).
-    <div aria-hidden className={`pointer-events-none overflow-hidden ${className}`}>
+    <div
+      aria-hidden
+      data-scroll-edge=""
+      className={`pointer-events-none overflow-hidden ${className}`}
+    >
       {layers.map((l, n) => (
         <div
           key={n}

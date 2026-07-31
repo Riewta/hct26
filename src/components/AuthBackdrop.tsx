@@ -16,6 +16,8 @@
  * (an unrotated bounding box that centres a rotated child) because the bounding box
  * is what positions the piece; rotating in place would shift every one of them.
  */
+import { useEffect, useRef, type ReactNode } from 'react'
+
 const F = '/assets/figma/'
 
 const EGG = `${F}c6846fdac4a084629e25f2100a77c420948f8b4d.png`
@@ -35,8 +37,21 @@ type Box = { left: number; top: number; width: number; height: number }
  * same three fills appear on sign-in and on the registration gate at wildly different
  * geometry, and naming them is what lets the browser morph one layout into the other.
  */
-function Block({ src, className = '', ...box }: Box & { src: string; className?: string }) {
-  return <img src={src} alt="" className={`absolute max-w-none ${className}`} style={box} />
+function Block({
+  src,
+  className = '',
+  rise,
+  ...box
+}: Box & { src: string; className?: string; rise?: number }) {
+  return (
+    <img
+      src={src}
+      alt=""
+      className={`absolute max-w-none ${rise === undefined ? '' : 'auth-rise'} ${className}`}
+      data-rise={rise}
+      style={box}
+    />
+  )
 }
 
 type PieceProps = Box & {
@@ -47,11 +62,21 @@ type PieceProps = Box & {
   rotate: number
   /** Figma mirrors the tomatoes vertically as well as rotating them. */
   flipY?: boolean
+  /** Position in the sign-in entrance stagger; omitted where there is no entrance. */
+  rise?: number
 }
 
-function Piece({ src, w, h, rotate, flipY, ...box }: PieceProps) {
+function Piece({ src, w, h, rotate, flipY, rise, ...box }: PieceProps) {
   return (
-    <div className="absolute flex items-center justify-center" style={box}>
+    /*
+     * The entrance rides the outer box, which carries no transform of its own — the
+     * rotation lives on the child. Two transforms on one element would fight.
+     */
+    <div
+      className={`absolute flex items-center justify-center ${rise === undefined ? '' : 'auth-rise'}`}
+      data-rise={rise}
+      style={box}
+    >
       <div
         className="flex-none"
         style={{ transform: `rotate(${rotate}deg)${flipY ? ' scaleY(-1)' : ''}` }}
@@ -60,6 +85,85 @@ function Piece({ src, w, h, rotate, flipY, ...box }: PieceProps) {
       </div>
     </div>
   )
+}
+
+/**
+ * One plane of the sign-in collage. `depth` is how many pixels the plane travels when
+ * the pointer crosses half the viewport, and it is the only thing that separates the
+ * planes: the pan sits nearest the viewer and moves most, the colour blocks furthest and
+ * barely move. Every plane is a full-bleed box so its child keeps its Figma coordinates.
+ *
+ * A wrapper per piece rather than one wrapper per depth band, because the red block is
+ * painted *between* the eggs and grouping by depth would reorder the stack.
+ */
+function Plane({ depth, children }: { depth: number; children: ReactNode }) {
+  return (
+    <div className="auth-depth absolute inset-0" data-depth={depth}>
+      {children}
+    </div>
+  )
+}
+
+/**
+ * Pointer parallax for the collage. Decorative, so it is allowed to be playful — and
+ * decorative is exactly why it must not snap: the layers chase the pointer with a spring
+ * -like ease rather than being pinned to it, which is what makes it read as depth rather
+ * than as a value being assigned (Emil's note on spring-interpolated mouse tracking).
+ *
+ * Every frame writes `transform` directly on each plane. The tempting alternative — one
+ * custom property on the collage root — would invalidate the style of all fifteen
+ * descendants per frame; eight transform writes touch nothing but their own layers.
+ *
+ * Gated on a fine pointer (a touch tap would jump the whole collage) and on
+ * `prefers-reduced-motion`, where the listener is simply never attached, so the planes
+ * keep the identity transform they render with.
+ */
+function usePointerParallax(rootRef: React.RefObject<HTMLDivElement | null>) {
+  useEffect(() => {
+    const root = rootRef.current
+    if (!root) return
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    const planes = [...root.querySelectorAll<HTMLElement>('[data-depth]')].map((el) => ({
+      el,
+      depth: Number(el.dataset.depth) || 0,
+      x: 0,
+      y: 0,
+    }))
+
+    let tx = 0
+    let ty = 0
+    let frame = 0
+
+    const step = () => {
+      let moving = false
+      for (const plane of planes) {
+        const dx = tx * plane.depth - plane.x
+        const dy = ty * plane.depth - plane.y
+        // 0.09 per frame ≈ a 250ms settle at 60fps: it follows without lagging behind
+        plane.x += dx * 0.09
+        plane.y += dy * 0.09
+        if (Math.abs(dx) > 0.05 || Math.abs(dy) > 0.05) moving = true
+        plane.el.style.transform = `translate3d(${plane.x.toFixed(2)}px, ${plane.y.toFixed(2)}px, 0)`
+      }
+      // stop the loop once it has settled — an idle rAF for a decoration is not free
+      frame = moving ? requestAnimationFrame(step) : 0
+    }
+
+    const onMove = (e: PointerEvent) => {
+      tx = (e.clientX / window.innerWidth) * 2 - 1
+      ty = (e.clientY / window.innerHeight) * 2 - 1
+      if (!frame) frame = requestAnimationFrame(step)
+    }
+
+    window.addEventListener('pointermove', onMove, { passive: true })
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      if (frame) cancelAnimationFrame(frame)
+      for (const plane of planes) plane.el.style.transform = ''
+    }
+  }, [rootRef])
 }
 
 /**
@@ -218,52 +322,82 @@ const SIGN_IN_SHAKERS: PieceProps[] = [
  * the collage deliberately overflows it on every side and is clipped by the page.
  */
 export default function AuthBackdrop() {
+  const root = useRef<HTMLDivElement>(null)
+  usePointerParallax(root)
+
+  /*
+   * `rise` indices order the entrance back-to-front, which is also Figma's paint order:
+   * the three colour blocks lift first, the pan follows, then the eggs land on it one at
+   * a time, and the shaker ring is last in. See `[data-auth-entrance] .auth-rise` in
+   * styles/auth-motion.css — the whole entrance is suppressed when the visitor arrived
+   * through the morph, which has already animated these same boxes.
+   */
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0">
-      <Block
-        src={`${F}fa0b9f2f4fa7dcf077181151e86e3aecdf7a85a3.svg`}
-        className="auth-block-amber"
-        left={0}
-        top={447.355}
-        width={944}
-        height={519.633}
-      />
-      <Block
-        src={`${F}81ab6df7b9ffc666c9e4e34fea15824767b81f3d.svg`}
-        className="auth-block-green"
-        left={438}
-        top={14}
-        width={390}
-        height={595.71}
-      />
+    <div aria-hidden ref={root} className="pointer-events-none absolute inset-0">
+      <Plane depth={5}>
+        <Block
+          src={`${F}fa0b9f2f4fa7dcf077181151e86e3aecdf7a85a3.svg`}
+          className="auth-block-amber"
+          rise={0}
+          left={0}
+          top={447.355}
+          width={944}
+          height={519.633}
+        />
+      </Plane>
+      <Plane depth={7}>
+        <Block
+          src={`${F}81ab6df7b9ffc666c9e4e34fea15824767b81f3d.svg`}
+          className="auth-block-green"
+          rise={1}
+          left={438}
+          top={14}
+          width={390}
+          height={595.71}
+        />
+      </Plane>
 
       {SIGN_IN_EGGS.map((egg, i) => (
-        <Piece key={i} src={EGG} {...egg} />
+        <Plane key={i} depth={12 + i * 2}>
+          <Piece src={EGG} rise={4 + i} {...egg} />
+        </Plane>
       ))}
 
       {/* painted after the eggs so it crops them, exactly as the design stacks it */}
-      <Block
-        src={`${F}239721762cc0b1a7e9b0ba787ef6c2010c4bc928.svg`}
-        className="auth-block-red"
-        left={0}
-        top={14}
-        width={416}
-        height={495}
-      />
+      <Plane depth={6}>
+        <Block
+          src={`${F}239721762cc0b1a7e9b0ba787ef6c2010c4bc928.svg`}
+          className="auth-block-red"
+          rise={2}
+          left={0}
+          top={14}
+          width={416}
+          height={495}
+        />
+      </Plane>
 
-      <img
-        src={PAN}
-        alt=""
-        className="absolute max-w-none object-cover"
-        style={{ left: -125, top: -59, width: 654, height: 465 }}
-      />
+      {/* the pan is the nearest object in the collage, so it takes the most parallax */}
+      <Plane depth={20}>
+        {/* the entrance and the 96s turn need one element each, as the shaker ring does */}
+        <div
+          className="auth-rise absolute"
+          data-rise={3}
+          style={{ left: -125, top: -59, width: 654, height: 465 }}
+        >
+          <img src={PAN} alt="" className="auth-pan-turn size-full max-w-none object-cover" />
+        </div>
+      </Plane>
 
-      {/* one box, one transform — see `.auth-pepper-ring` in styles/auth-motion.css */}
-      <div className="auth-pepper-ring absolute" style={SHAKER_RING}>
-        {SIGN_IN_SHAKERS.map((item, i) => (
-          <Piece key={i} {...item} />
-        ))}
-      </div>
+      <Plane depth={10}>
+        {/* the entrance and the 96s turn need one element each — see auth-motion.css */}
+        <div className="auth-rise absolute" data-rise={7} style={SHAKER_RING}>
+          <div className="auth-pepper-ring absolute inset-0">
+            {SIGN_IN_SHAKERS.map((item, i) => (
+              <Piece key={i} {...item} />
+            ))}
+          </div>
+        </div>
+      </Plane>
     </div>
   )
 }
@@ -337,10 +471,20 @@ export function ColourBlockBackdrop({ muted = false }: { muted?: boolean }) {
         className="absolute inset-x-0 top-[1024px] bottom-0"
         style={{ background: muted ? '#f0f0f0' : '#d79a4e' }}
       />
-      <div className="absolute top-0 left-1/2 h-[1024px] w-[1440px] -translate-x-1/2">
-        {blocks.map((block) => (
-          <Block key={block.src} {...block} />
-        ))}
+      {/*
+       * The parallax rides its own wrapper, not the 1440 box below it: that box is
+       * centred with a translate, and a keyframe animating `transform` on the same
+       * element would drop the centring. The blocks run far past the frame on every side
+       * (amber alone reaches y=1506 of a 1024 frame), so 80px of lag never exposes an
+       * edge. The bottom fill band stays outside the wrapper — it has to keep covering
+       * the fold whatever the blocks do.
+       */}
+      <div className="auth-parallax-lag absolute inset-0">
+        <div className="absolute top-0 left-1/2 h-[1024px] w-[1440px] -translate-x-1/2">
+          {blocks.map((block) => (
+            <Block key={block.src} {...block} />
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -488,9 +632,15 @@ export function WizardBackdrop({ withTomatoes = true }: { withTomatoes?: boolean
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
       <div className="absolute inset-y-0 left-1/2 w-[1440px] -translate-x-1/2">
-        {/* named so the decoration is lifted out of the step-to-step crossfade and holds still */}
+        {/*
+         * Named so the decoration is lifted out of the step-to-step crossfade and holds
+         * still. The two clusters also carry the wizard's scroll parallax, and they take
+         * opposite halves of it: the pasta lags the page as a far layer would, the
+         * tomatoes outrun it, and the entrant steps are long enough (well past 2000px) to
+         * make the split obvious. Both are transform-only and compositor-driven.
+         */}
         <div
-          className="wizard-pasta absolute"
+          className="wizard-pasta auth-parallax-lag absolute"
           style={{ left: 904.91, top: -305.14, width: 773.059, height: 696.332 }}
         >
           {WIZARD_PASTA.map((piece, i) => (
@@ -500,7 +650,7 @@ export function WizardBackdrop({ withTomatoes = true }: { withTomatoes?: boolean
 
         {withTomatoes && (
           <div
-            className="wizard-tomatoes absolute"
+            className="wizard-tomatoes auth-parallax-lead absolute"
             style={{ left: -129.22, bottom: -70.24, width: 470.728, height: 402.236 }}
           >
             {WIZARD_TOMATOES.map((piece, i) => (

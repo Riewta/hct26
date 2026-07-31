@@ -12,25 +12,22 @@ export default function ScopeSection() {
   const cards = useReveal({ group: true })
 
   return (
-    <section
-      id="scope"
-      className="relative px-4 pt-40 pb-20 lg:px-[120px] lg:pt-[219px] lg:pb-[197px]"
-    >
+    <section id="scope" className="shell sec-scope relative">
       <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col gap-10">
-        <div ref={head.ref} className={`flex flex-col gap-3 lg:gap-5 ${head.cls}`}>
-          <p className="text-lg leading-[1.5] font-medium text-brand-yellow lg:text-2xl">01</p>
+        <div ref={head.ref} className={`flex flex-col gap-[calc(12px_+_8*var(--fl))] ${head.cls}`}>
+          <p className="fl-eyebrow leading-[1.5] font-medium text-brand-yellow">01</p>
           {/* the pill is centred against the title + intro pair, not against the row's top */}
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:gap-0">
-            <div className="flex flex-col gap-2 lg:flex-1 lg:gap-1">
-              <h2 className="text-3xl leading-[1.4] font-semibold lg:text-5xl">ขอบเขตเนื้อหา</h2>
-              <p className="text-base leading-[1.5] font-light lg:text-2xl">{SCOPE_INTRO}</p>
+            <div className="flex flex-col gap-[calc(8px_-_4*var(--fl))] lg:flex-1">
+              <h2 className="fl-display leading-[1.4] font-semibold">ขอบเขตเนื้อหา</h2>
+              <p className="fl-lead leading-[1.5] font-light">{SCOPE_INTRO}</p>
             </div>
             <a
               href="#"
-              className="mm-press flex shrink-0 items-center gap-5 self-start rounded-[100px] bg-brand-red py-4 pr-9 pl-6 text-white transition-opacity hover:opacity-90 lg:self-auto"
+              className="mm-press flex shrink-0 items-center gap-[calc(12px_+_8*var(--fl))] self-start rounded-[100px] bg-brand-red py-[calc(12px_+_4*var(--fl))] pr-[calc(24px_+_12*var(--fl))] pl-[calc(16px_+_8*var(--fl))] text-white transition-opacity hover:opacity-90 lg:self-auto"
             >
               {/* a download arrow leans the way it points on hover */}
-              <span className="mm-arrow-down relative block size-[34px] shrink-0">
+              <span className="mm-arrow-down relative block size-[calc(26px_+_8*var(--fl))] shrink-0">
                 <img
                   src="/assets/figma/115b31f82f018f10c7430912ba6f548f7d8eab15.svg"
                   alt=""
@@ -38,14 +35,17 @@ export default function ScopeSection() {
                   className="absolute inset-[12.54%_22.35%_14.08%_22.33%] max-w-none"
                 />
               </span>
-              <span className="text-lg leading-[1.4] font-bold whitespace-nowrap lg:text-2xl">
+              <span className="fl-copy leading-[1.4] font-bold whitespace-nowrap">
                 ดาวน์โหลดฉบับเต็ม (PDF)
               </span>
             </a>
           </div>
         </div>
 
-        <div ref={cards.ref} className={`grid gap-10 md:grid-cols-2 lg:grid-cols-3 ${cards.cls}`}>
+        <div
+          ref={cards.ref}
+          className={`grid gap-[calc(24px_+_16*var(--fl))] md:grid-cols-2 lg:grid-cols-3 ${cards.cls}`}
+        >
           {SCOPE_CARDS.map((card) => (
             <article
               key={card.title}
@@ -69,14 +69,12 @@ export default function ScopeSection() {
                   className="absolute inset-0 size-full max-w-none"
                 />
                 <div className="relative flex flex-col gap-1">
-                  <h3 className="text-2xl leading-[1.4] font-medium lg:text-[28px]">
-                    {card.title}
-                  </h3>
-                  <p className="text-lg leading-[1.4] font-light lg:text-xl">{card.body}</p>
+                  <h3 className="fl-title-alt leading-[1.4] font-medium">{card.title}</h3>
+                  <p className="fl-body leading-[1.4] font-light">{card.body}</p>
                 </div>
                 <p className="relative flex items-center gap-3">
-                  <span className="text-2xl leading-[1.4] lg:text-3xl">{card.count}</span>
-                  <span className="flex-1 text-lg leading-[1.4] lg:text-xl">หัวข้อ</span>
+                  <span className="fl-title leading-[1.4]">{card.count}</span>
+                  <span className="fl-body flex-1 leading-[1.4]">หัวข้อ</span>
                   <img
                     src="/assets/figma/7a9a840bc86f022af7d9842b56f91f168bd06a03.svg"
                     alt=""

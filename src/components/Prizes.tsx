@@ -20,7 +20,7 @@ export default function Prizes() {
        * which is what made it read as oversized. lg-only, because below lg the band's
        * props are hidden and the gap would just be dead space.
        */
-      className="relative bg-brand-red px-4 py-20 lg:mb-[247px] lg:bg-transparent lg:px-15 lg:py-[165.5px]"
+      className="shell sec-prizes relative bg-brand-red lg:mb-[247px] lg:bg-transparent"
     >
       {/*
        * The red band is not a section fill — it is the 2213.6 x 1162.5 blob painted in the
@@ -57,8 +57,8 @@ export default function Prizes() {
               <div
                 className={`flex flex-col gap-4 text-white ${CENTRED.includes(i) ? 'lg:items-center' : ''}`}
               >
-                <h3 className="text-2xl leading-[1.4] font-medium lg:text-3xl">{prize.title}</h3>
-                <p className="w-full text-lg leading-[1.5] font-light lg:text-2xl">{prize.body}</p>
+                <h3 className="fl-title leading-[1.4] font-medium">{prize.title}</h3>
+                <p className="fl-copy w-full leading-[1.5] font-light">{prize.body}</p>
               </div>
             </article>
           ))}

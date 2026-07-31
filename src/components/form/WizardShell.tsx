@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import GoogleLogo from '../GoogleLogo'
 import { WizardBackdrop } from '../AuthBackdrop'
 import ScrollEdgeEffect from '../ScrollEdgeEffect'
-import { markWizardNav, supportsViewTransitions } from './wizardNav'
+import { markAuthNav, supportsViewTransitions } from './wizardNav'
 
 export const TOTAL_STEPS = 5
 
@@ -25,7 +25,7 @@ export default function WizardShell({
   actions,
   overlay,
   withTomatoes = true,
-  blurBehindContent = false,
+  receded = false,
 }: {
   step: number
   children: ReactNode
@@ -40,11 +40,12 @@ export default function WizardShell({
   /** The terms step drops the tomato cluster. */
   withTomatoes?: boolean
   /**
-   * Figma stacks the scroll-edge blur above the whole page on the first four steps —
-   * the top bar really is softened there — but re-orders it behind the content on the
-   * terms step, so the layer is switchable.
+   * True while an overlay owns the screen. Apple's rule for a modal task: dim to focus,
+   * and push the parent layer back so the two read as separate planes. It rides the
+   * content wrapper rather than the root, because a transform on the root would make it
+   * the containing block for the overlay's own `fixed` scrim.
    */
-  blurBehindContent?: boolean
+  receded?: boolean
 }) {
   const activeCrumb = CRUMB_FOR_STEP[step - 1]
 
@@ -52,13 +53,19 @@ export default function WizardShell({
     <div className="relative flex min-h-dvh flex-col bg-[#fefdfc]">
       <WizardBackdrop withTomatoes={withTomatoes} />
 
-      <div className="relative z-10 mx-auto flex w-full max-w-[1040px] flex-1 flex-col gap-4 px-4 py-8 lg:gap-10 lg:px-0 lg:pt-15 lg:pb-0">
+      <div
+        data-recede={receded}
+        className="auth-recede relative z-10 mx-auto flex w-full max-w-[1040px] flex-1 flex-col gap-4 px-4 py-8 lg:gap-10 lg:px-0 lg:pt-15 lg:pb-0"
+      >
         {/*
-         * `wizard-header` / `wizard-progress` / `wizard-body` are view-transition names
+         * `auth-topbar` / `wizard-progress` / `wizard-body` are view-transition names
          * (styles/auth-motion.css). Naming the chrome lifts it out of the page-level
          * crossfade so it holds perfectly still between steps and only the form travels.
+         * `auth-topbar` is shared with the gate and the result screens, where the same
+         * two controls sit in the same corner — so the account chip is one object for the
+         * whole flow rather than one per screen.
          */}
-        <header className="wizard-header flex items-center justify-between gap-4 rounded-[24px] bg-white p-4 shadow-soft lg:p-5">
+        <header className="auth-topbar flex items-center justify-between gap-4 rounded-[24px] bg-white p-4 shadow-soft lg:p-5">
           <Link to="/">
             <img
               src="/assets/figma/95f39e217dc710a779c3c0b6cf30b3a377d857f5.png"
@@ -86,7 +93,14 @@ export default function WizardShell({
          * that bar to the card's bottom edge on its own 20 inset, so it cancels the
          * card's 40 side padding and stays 20 below the content.
          */}
-        <div className="flex flex-1 flex-col rounded-[24px] bg-white p-6 pb-0 shadow-soft lg:min-h-[832px] lg:p-10 lg:pb-0">
+        {/*
+         * `auth-sheet` is the one white plate that runs the whole flow: it is the gate's
+         * requirements card before this and the success/error card after it, so the plate
+         * persists across every hop and only its contents change. Between steps its box
+         * is pinned (`animation-duration: 0s` on the group) so the form inside can snap
+         * to the new step's height without hanging out of a plate still resizing.
+         */}
+        <div className="auth-sheet flex flex-1 flex-col rounded-[24px] bg-white p-6 pb-0 shadow-soft lg:min-h-[832px] lg:p-10 lg:pb-0">
           <div className="flex flex-1 flex-col gap-6 lg:gap-10">
             {/* title and crumbs sit flush in Figma — no gap between them */}
             <div className="flex flex-col items-start">
@@ -115,9 +129,17 @@ export default function WizardShell({
               aria-label={`ขั้นตอนที่ ${step} จาก ${TOTAL_STEPS}`}
             >
               {Array.from({ length: TOTAL_STEPS }, (_, i) => (
+                /*
+                 * The segment this step just reached sweeps in from its left edge instead
+                 * of already being filled — the beat that tells the user the step counted.
+                 * `key` includes the step so React builds a fresh element each hop and the
+                 * animation actually replays. See `.wizard-progress-fill` in auth-motion.css.
+                 */
                 <span
-                  key={i}
-                  className={`h-full flex-1 rounded-full ${i < step ? 'bg-brand-red' : 'bg-[#e6e6e6]'}`}
+                  key={i === step - 1 ? `active-${step}` : i}
+                  className={`h-full flex-1 rounded-full ${
+                    i < step ? 'bg-brand-red' : 'bg-[#e6e6e6]'
+                  } ${i === step - 1 ? 'wizard-progress-fill' : ''}`}
                 />
               ))}
             </div>
@@ -131,9 +153,14 @@ export default function WizardShell({
         </div>
       </div>
 
-      <ScrollEdgeEffect
-        className={`fixed inset-x-0 top-0 h-[160px] ${blurBehindContent ? 'z-0' : 'z-30'}`}
-      />
+      {/*
+       * z-0, i.e. under the z-10 content wrapper, on every step. It used to sit at z-30 on
+       * the first four, on the reading that Figma softens the top bar too — but 708:1255
+       * renders that bar crisp, and over the live page the band washed the logo and the
+       * account chip out at scroll 0, before anything had even scrolled under them. What
+       * the effect is for is the decorative backdrop passing beneath the chrome.
+       */}
+      <ScrollEdgeEffect className="fixed inset-x-0 top-0 z-0 h-[160px]" />
 
       {overlay}
     </div>
@@ -153,7 +180,7 @@ export function BackButton({ to }: { to: string }) {
     <Link
       to={to}
       viewTransition={supportsViewTransitions}
-      onClick={() => markWizardNav('back')}
+      onClick={() => markAuthNav('back')}
       className={`${STEP_BUTTON} pr-6 pl-4`}
     >
       <img
@@ -172,7 +199,7 @@ export function NextButton({ to, label = 'ถัดไป' }: { to: string; labe
     <Link
       to={to}
       viewTransition={supportsViewTransitions}
-      onClick={() => markWizardNav('forward')}
+      onClick={() => markAuthNav('forward')}
       className={`${STEP_BUTTON} ml-auto pr-4 pl-6`}
     >
       {label}
@@ -186,13 +213,17 @@ export function NextButton({ to, label = 'ถัดไป' }: { to: string; labe
   )
 }
 
-/** The terms step's submit: same pill, no icon, so the padding is symmetric. */
+/**
+ * The terms step's submit: same pill, no icon, so the padding is symmetric. It flags
+ * `submit` rather than `forward` because it leaves the wizard — the pasta has to spill
+ * back out and the colour blocks have to return (styles/auth-motion.css).
+ */
 export function SubmitButton({ to, label }: { to: string; label: string }) {
   return (
     <Link
       to={to}
       viewTransition={supportsViewTransitions}
-      onClick={() => markWizardNav('forward')}
+      onClick={() => markAuthNav('submit')}
       className={`${STEP_BUTTON} ml-auto px-6`}
     >
       {label}

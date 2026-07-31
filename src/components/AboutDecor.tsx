@@ -20,6 +20,7 @@ const GARLIC = `${A}3762ab86266f19ae60ffdbc35a12c302cdeaeaae.png`
 const POT_WAVE = `${A}04e4ea7c8b321468519b19736f247ed81b6e13b4.svg`
 const TOMATO_WAVE = `${A}0bfef7e400c4e3e40a9a5e579a3bfb301e852a4d.svg`
 const GARLIC_WAVE = `${A}1929430b7343966fe082e8a4e52d59eeeeca1c68.svg`
+const CONTACT_BAND = `${A}7b1205541033ca44bebf6de0974444d5c89fc456.svg`
 const WASH = `${A}31e583ef33f9b578ae1882798097740e00a4a0bf.svg`
 
 /** A node whose image fill is cropped — Figma scales the bitmap past the node box. */
@@ -96,37 +97,140 @@ const POTS: Prop[] = [
 ]
 
 /*
- * Garlic. Figma expresses each bulb's size with container-relative `hypot()` maths, which
- * resolves to one art box per bulb — 362.86x258 for the three largest, scaled copies for
- * the rest, all at the bitmap's own 1.406 aspect — inside the box Figma reports for the
- * node. Drawing the bitmap at the *box* size instead (as this file used to) made every
- * bulb 17-40% too big and dropped its rotation, which is why the pile read as two giant
- * cloves rather than a heap of whole bulbs.
+ * ------------------------------------------------------------------- garlic
  *
- * Both rows are clipped by their frame, which is the only reason the pile stops where it
- * does rather than running down over the map. Row 2 (935:1314) is left out: it starts at
- * page x 1414 and its nearest bulb at 1478, so every part of it is off the 1440 canvas.
+ * Three heaps of garlic between the FAQ and the Contact section. Each heap is a Figma
+ * *frame* of six bulbs turned to roughly 60deg intervals, so the six read as one whole,
+ * splayed bulb rather than as six loose cloves — and getting that reading right is the
+ * whole difficulty here, because the frame is rotated and Figma reports two boxes for it:
+ *
+ *   - the **bbox** (`x/y/w/h` below), the axis-aligned box the rotated frame occupies in
+ *     its parent — this is what `get_metadata` returns and it is where the heap *sits*;
+ *   - the **inner box** (`iw/ih`), the frame's own unrotated size, centred in the bbox —
+ *     this is the space the six bulbs are laid out in, and it is 20-25% smaller.
+ *
+ * This file previously read the bbox as the layout space and dropped the frame rotation
+ * entirely, which scaled every bulb up by ~1.35 and pushed the heaps a few hundred px down
+ * and right; at that size the six bulbs no longer overlapped, so the pile came apart into
+ * separate cloves and only two of them were left on the 1440 canvas. `get_metadata` also
+ * reports a rotated frame's `x/y` as the position of its *rotated* top-left corner, not of
+ * the bbox — Row 1 reads (93, 181.5) there but its bbox top is 13 — so the row positions
+ * below are taken from `get_design_context`, which states the bbox directly.
+ *
+ * Inside a heap the same two-box rule applies per bulb: `w/h` is the container Figma sizes
+ * from the inner box, `aw/ah` the art box (its `hypot()` maths) centred in it and turned by
+ * `rot`. Everything is transcribed; `scratch/calc.mjs`-style arithmetic is not repeated at
+ * runtime. Check: Row 1's six containers tile its inner box exactly (right edge 579.79,
+ * bottom 564.48), which is what proves the inner box is the right layout space.
  */
+type Bulb = { x: number; y: number; w: number; h: number; aw: number; ah: number; rot: number }
+
+/** 935:1307 / 935:1300-1305 — the big heap, laid out in a 579.78 x 564.464 frame. */
 // prettier-ignore
-const GARLIC_ROW_1: Prop[] = [
-  { src: GARLIC, x: 171.685, y: 74.988, w: 426.191, h: 360.270, uw: 362.86, uh: 258.00, rot: -1.7 },
-  { src: GARLIC, x: 468.661, y: 65.420, w: 418.774, h: 445.207, uw: 362.86, uh: 258.00, rot: 72.17 },
-  { src: GARLIC, x: 561.234, y: 262.551, w: 351.854, h: 421.923, uw: 362.86, uh: 258.00, rot: 123.69 },
-  { src: GARLIC, x: 427.739, y: 435.920, w: 349.510, h: 302.099, uw: 293.17, uh: 208.51, rot: 175.21 },
-  { src: GARLIC, x: 251.966, y: 506.264, w: 448.948, h: 409.661, uw: 367.61, uh: 261.44, rot: -133.27 },
-  { src: GARLIC, x: 103.347, y: 263.711, w: 269.782, h: 337.196, uw: 300.24, uh: 213.46, rot: -61.44 },
+const HEAP_1: Bulb[] = [
+  { x: 171.69, y:  64.24, w: 370.35, h: 268.68, aw: 315.27, ah: 192.46, rot:   -1.7 },
+  { x: 223.04, y:  65.42, w: 356.75, h: 424.43, aw: 342.64, ah: 222.40, rot:  72.17 },
+  { x: 145.27, y: 119.44, w: 415.96, h: 445.04, aw: 397.52, ah: 295.31, rot: 123.69 },
+  { x: 118.14, y: 228.16, w: 309.60, h: 232.26, aw: 259.51, ah: 160.49, rot: 175.21 },
+  { x:      0, y:  59.38, w: 442.32, h: 446.86, aw: 383.25, ah: 270.87, rot: -133.27 },
+  { x: 103.34, y:      0, w: 331.05, h: 365.77, aw: 335.93, ah: 255.37, rot: -61.44 },
 ]
 
-/* Row 3 is Row 1 at 0.5453 scale — same six turns, same art boxes shrunk to match. */
+/** 935:1314 — mirrored and turned nearly upside down, in a 441.654 x 430.329 frame. */
 // prettier-ignore
-const GARLIC_ROW_3: Prop[] = [
-  { src: GARLIC, x: 127.376, y: 79.120, w: 232.386, h: 196.442, uw: 197.87, uh: 140.69, rot: -1.7 },
-  { src: GARLIC, x: 289.306, y: 73.903, w: 228.342, h: 242.755, uw: 197.87, uh: 140.69, rot: 72.17 },
-  { src: GARLIC, x: 339.784, y: 181.390, w: 191.853, h: 230.059, uw: 197.87, uh: 140.69, rot: 123.69 },
-  { src: GARLIC, x: 266.993, y: 275.922, w: 190.575, h: 164.724, uw: 159.87, uh: 113.70, rot: 175.21 },
-  { src: GARLIC, x: 171.152, y: 314.279, w: 244.795, h: 223.373, uw: 200.46, uh: 142.55, rot: -133.27 },
-  { src: GARLIC, x: 90.116, y: 182.023, w: 147.102, h: 183.861, uw: 163.72, uh: 116.40, rot: -61.44 },
+const HEAP_2: Bulb[] = [
+  { x: 124.32, y:  58.57, w: 275.95, h: 285.96, aw: 239.60, ah: 166.86, rot:  51.02 },
+  { x: 104.29, y: 111.93, w: 269.75, h: 286.50, aw: 254.60, ah: 188.19, rot: 124.89 },
+  { x:  65.76, y: 165.42, w: 243.44, h: 180.34, aw: 205.22, ah: 126.29, rot: 176.41 },
+  { x:  41.97, y: 100.35, w: 226.03, h: 229.97, aw: 195.84, ah: 137.84, rot: -132.07 },
+  { x:  63.86, y:  34.43, w: 204.79, h: 260.97, aw: 240.94, ah: 174.38, rot: -80.55 },
+  { x: 130.12, y:  67.82, w: 211.80, h: 165.10, aw: 174.70, ah: 109.73, rot:  -8.72 },
 ]
+
+/** 935:1321 — Heap 1's six turns again, in a 400.706 x 372.726 frame. */
+// prettier-ignore
+const HEAP_3: Bulb[] = [
+  { x: 127.37, y:  73.24, w: 201.94, h: 146.50, aw: 171.91, ah: 104.94, rot:   -1.7 },
+  { x: 155.37, y:  73.91, w: 194.52, h: 231.43, aw: 186.83, ah: 121.26, rot:  72.17 },
+  { x: 112.98, y: 103.36, w: 226.81, h: 242.66, aw: 216.76, ah: 161.02, rot: 123.69 },
+  { x:  98.18, y: 162.62, w: 168.81, h: 126.64, aw: 141.50, ah:  87.51, rot: 175.21 },
+  { x:  33.76, y:  70.63, w: 241.18, h: 243.66, aw: 208.97, ah: 147.70, rot: -133.27 },
+  { x:  90.12, y:  38.24, w: 180.51, h: 199.44, aw: 183.17, ah: 139.24, rot: -61.44 },
+]
+
+type Heap = {
+  /** the rotated frame's axis-aligned box in its parent */
+  x: number
+  y: number
+  w: number
+  h: number
+  /** the frame's own unrotated size, centred in that box */
+  iw: number
+  ih: number
+  rot: number
+  flipY?: boolean
+  bulbs: Bulb[]
+}
+
+/** The three heaps, positioned inside the "Garlic Row" frame (935:1306). */
+const HEAPS: Heap[] = [
+  { x: 93, y: 13, w: 718.808, h: 708.605, iw: 579.78, ih: 564.464, rot: -16.9, bulbs: HEAP_1 },
+  {
+    x: 0,
+    y: 0,
+    w: 547.66,
+    h: 540.115,
+    iw: 441.654,
+    ih: 430.329,
+    rot: -163.1,
+    flipY: true,
+    bulbs: HEAP_2,
+  },
+  {
+    x: 91,
+    y: 226,
+    w: 491.738,
+    h: 473.098,
+    iw: 400.706,
+    ih: 372.726,
+    rot: 16.9,
+    flipY: true,
+    bulbs: HEAP_3,
+  },
+]
+
+function GarlicHeap({ heap }: { heap: Heap }) {
+  return (
+    <div
+      className="absolute flex items-center justify-center"
+      style={{ left: heap.x, top: heap.y, width: heap.w, height: heap.h }}
+    >
+      <div
+        className="relative shrink-0"
+        style={{
+          width: heap.iw,
+          height: heap.ih,
+          transform: `rotate(${heap.rot}deg)${heap.flipY ? ' scaleY(-1)' : ''}`,
+        }}
+      >
+        {heap.bulbs.map((b, i) => (
+          <div
+            key={i}
+            className="absolute flex items-center justify-center"
+            style={{ left: b.x, top: b.y, width: b.w, height: b.h }}
+          >
+            <img
+              src={GARLIC}
+              alt=""
+              className="max-w-none shrink-0 object-cover"
+              style={{ width: b.aw, height: b.ah, transform: `rotate(${b.rot}deg)` }}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 function Props({ items, x, y }: { items: Prop[]; x: number; y: number }) {
   return (
@@ -157,11 +261,16 @@ function Props({ items, x, y }: { items: Prop[]; x: number; y: number }) {
  */
 function Canvas({ children }: { children: ReactNode }) {
   return (
+    /*
+     * Outer box = the clip, viewport-wide so the oversized washes reach the screen edge
+     * instead of leaving a white gutter past 1440. Inner box = the coordinate space, a
+     * centred 1440, because every child is pinned at its Figma page x/y.
+     */
     <div
       aria-hidden
-      className="pointer-events-none absolute top-0 left-1/2 -z-10 hidden h-[4888px] w-[1440px] -translate-x-1/2 overflow-hidden lg:block"
+      className="pointer-events-none absolute top-0 left-1/2 -z-10 hidden h-[4888px] w-screen -translate-x-1/2 overflow-hidden lg:block"
     >
-      {children}
+      <div className="absolute top-0 left-1/2 h-full w-[1440px] -translate-x-1/2">{children}</div>
     </div>
   )
 }
@@ -187,6 +296,28 @@ export function AboutDecor() {
         </div>
       ))}
       {/*
+       * "Vector Shape" (935:1125) — the #FFEAB4 field behind the FAQ, whose curved bottom
+       * edge is what the contact section is drawn against and what the garlic heap rides.
+       * Without it the FAQ's own flat band just stopped dead across the full width.
+       *
+       * 3023 wide against a 1440 canvas is deliberate: only the middle third is ever on
+       * screen, and it is the curve that has to land, not the box.
+       *
+       * `get_metadata` reports y = 3495, which is 1163 — exactly one height — too low: the
+       * node is flipped, so the y it gives is the transformed corner, the same trap the
+       * rotated garlic frames spring. The real box top is 3495 − 1163. Checked against the
+       * render of the parent frame, where the band runs from just under the Codern card to
+       * the middle of the garlic's beige blob.
+       *
+       * Painted here, before the garlic and its blob, because the frame paints it under both.
+       */}
+      <img
+        src={CONTACT_BAND}
+        alt=""
+        className="absolute max-w-none"
+        style={{ left: -794, top: 2332, width: 3023, height: 1163 }}
+      />
+      {/*
        * Wave 3 (935:1298), the beige blob under the garlic. Figma reports the node's
        * pre-rotation origin, so its 180° turn puts the box at (1600-597, 3690-378).
        */}
@@ -196,19 +327,27 @@ export function AboutDecor() {
         className="absolute max-w-none rotate-180"
         style={{ left: 1003, top: 3312, width: 597, height: 378 }}
       />
-      {/* Figma keeps a second, separately clipped copy of the first row under the pile */}
+      {/*
+       * Figma keeps a second copy of the big heap (935:1299) in its own frame, painted
+       * just under the row. Its bbox works out to exactly where the row's own copy lands
+       * — (960, 3209), the row's (867+93, 3196+13) — so the two coincide; it is drawn
+       * because the frame does, not because it adds anything.
+       */}
       <div
         className="absolute overflow-hidden"
-        style={{ left: 960, top: 3377.507, width: 718.808, height: 708.605 }}
+        style={{ left: 960, top: 3208.98, width: 718.808, height: 708.605 }}
       >
-        <Props items={GARLIC_ROW_1} x={0} y={0} />
+        <GarlicHeap heap={{ ...HEAPS[0], x: 0, y: 0 }} />
       </div>
+      {/* "Garlic Row" (935:1306), which clips — the only reason the heaps stop where they
+          do rather than running on down over the map. */}
       <div
         className="absolute overflow-hidden"
         style={{ left: 867, top: 3196, width: 811.808, height: 721.604 }}
       >
-        <Props items={GARLIC_ROW_1} x={93} y={181.507} />
-        <Props items={GARLIC_ROW_3} x={91} y={582.637} />
+        {HEAPS.map((heap, i) => (
+          <GarlicHeap key={i} heap={heap} />
+        ))}
       </div>
       {/*
        * "Decoration / Circle" (935:1656) — a #D79A4E blob at 20% under a 400px layer blur,

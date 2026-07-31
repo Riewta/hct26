@@ -3,8 +3,12 @@ import type { PolicyBlock, PolicyDocument } from '../privacyPolicy'
 
 const ARROW_DOWN = '/assets/figma/b5fa6d1d1c4352d0d01420816b8777fe81ff5920.svg'
 
-/** Matches `--mm-base` in micro-motion.css — how long the sheet needs to get out. */
-const EXIT_MS = 220
+/**
+ * Matches the closing `.auth-modal-sheet` transition in styles/auth-motion.css. The exit
+ * is deliberately shorter than the 300ms entrance: arriving is an event, leaving should
+ * get out of the way.
+ */
+const EXIT_MS = 200
 
 function Block({ block }: { block: PolicyBlock }) {
   if (typeof block === 'string') {
@@ -40,15 +44,23 @@ function Block({ block }: { block: PolicyBlock }) {
 
 export default function PolicyModal({
   document: doc,
+  origin,
   onAccept,
   onDecline,
 }: {
   /** `null` closes the modal. */
   document: PolicyDocument | null
+  /**
+   * Viewport point of the control that opened the sheet, so it can grow out of that row
+   * and shrink back into it. Optional: without it the sheet scales from its own centre,
+   * which is the right default for a dialogue with no trigger to be anchored to.
+   */
+  origin?: { x: number; y: number } | null
   onAccept: () => void
   onDecline: () => void
 }) {
   const bodyRef = useRef<HTMLDivElement>(null)
+  const sheetRef = useRef<HTMLDivElement>(null)
 
   /*
    * The sheet has to outlive `document` by one exit animation, so the modal keeps its own
@@ -68,6 +80,18 @@ export default function PolicyModal({
       setMounted(true)
       const frame = requestAnimationFrame(() => {
         bodyRef.current?.scrollTo({ top: 0 })
+        /*
+         * `transform-origin` has to be in place before the opening transition starts, and
+         * it can only be worked out here: it is the trigger's point expressed in the
+         * sheet's own box, which does not exist until the sheet has been laid out. Two
+         * writes of a custom property on one element, once per open — not per frame.
+         */
+        const sheet = sheetRef.current
+        if (sheet && origin) {
+          const box = sheet.getBoundingClientRect()
+          sheet.style.setProperty('--auth-origin-x', `${origin.x - box.left}px`)
+          sheet.style.setProperty('--auth-origin-y', `${origin.y - box.top}px`)
+        }
         setState('open')
       })
       return () => cancelAnimationFrame(frame)
@@ -75,7 +99,7 @@ export default function PolicyModal({
     setState('closed')
     const timer = window.setTimeout(() => setMounted(false), EXIT_MS)
     return () => window.clearTimeout(timer)
-  }, [doc])
+  }, [doc, origin])
 
   // close on Escape and lock background scroll while open
   useEffect(() => {
@@ -98,19 +122,21 @@ export default function PolicyModal({
     /* Figma overlays every dialog on a light grey scrim that blurs the page behind it */
     <div
       data-state={state}
-      className="mm-scrim fixed inset-0 z-50 flex items-center justify-center bg-[rgba(194,194,194,0.3)] p-4 backdrop-blur-[5px] lg:p-25"
+      className="auth-modal-scrim fixed inset-0 z-50 flex items-center justify-center bg-[rgba(194,194,194,0.3)] p-4 backdrop-blur-[5px] lg:p-25"
       onClick={onDecline}
     >
       {/* Figma 708:2239 — a 1000x823 sheet, 24 of padding, 32 between header, body and footer */}
       <div
+        ref={sheetRef}
         role="dialog"
         aria-modal="true"
         aria-label={shown.title}
         data-state={state}
         onClick={(e) => e.stopPropagation()}
-        className="mm-sheet flex max-h-full w-full max-w-[1000px] flex-col gap-8 rounded-[32px] border border-[#dcdcdc] bg-white p-6 lg:h-[823px]"
+        className="auth-modal-sheet flex max-h-full w-full max-w-[1000px] flex-col gap-8 rounded-[32px] border border-[#dcdcdc] bg-white p-6 lg:h-[823px]"
       >
-        <header className="flex w-full shrink-0 items-center gap-4">
+        {/* the three regions settle in sequence behind the sheet — see `.auth-modal-part` */}
+        <header className="auth-modal-part flex w-full shrink-0 items-center gap-4">
           <img src={shown.icon} alt="" aria-hidden className="size-[40px] shrink-0" />
           <div className="flex min-w-0 flex-1 flex-col items-start justify-center">
             <p className="text-[28px] leading-[1.4] font-medium">{shown.title}</p>
@@ -120,7 +146,7 @@ export default function PolicyModal({
 
         <div
           ref={bodyRef}
-          className="flex min-h-0 w-full flex-1 flex-col items-start gap-6 overflow-y-auto pr-2"
+          className="auth-modal-part flex min-h-0 w-full flex-1 flex-col items-start gap-6 overflow-y-auto pr-2"
         >
           {shown.effective && <p className="w-full text-[20px] leading-[1.4]">{shown.effective}</p>}
           {shown.sections.map((section) => (
@@ -133,7 +159,7 @@ export default function PolicyModal({
           ))}
         </div>
 
-        <footer className="flex w-full shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <footer className="auth-modal-part flex w-full shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           {shown.downloadable ? (
             <button
               type="button"

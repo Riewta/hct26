@@ -11,22 +11,21 @@ export default function SectionHeader({
 }) {
   return (
     // Figma: number 36 tall, title 20 below it, description only 4 below the title.
-    <header className="flex w-full flex-col gap-3 lg:gap-5">
+    <header className="flex w-full flex-col gap-[calc(12px_+_8*var(--fl))]">
       <p
-        className={`text-lg leading-[1.5] font-medium lg:text-2xl ${light ? 'text-white' : 'text-brand-yellow'}`}
+        className={`fl-eyebrow leading-[1.5] font-medium ${light ? 'text-white' : 'text-brand-yellow'}`}
       >
         {number}
       </p>
-      <div className="flex flex-col gap-2 lg:gap-1">
+      {/* the gap closes as the type grows — 8 at 375, the design's 4 at 1440 */}
+      <div className="flex flex-col gap-[calc(8px_-_4*var(--fl))]">
         <h2
-          className={`text-3xl leading-[1.4] font-semibold lg:text-5xl ${light ? 'text-white' : 'text-ink'}`}
+          className={`fl-display leading-[1.4] font-semibold ${light ? 'text-white' : 'text-ink'}`}
         >
           {title}
         </h2>
         {description && (
-          <p
-            className={`text-base leading-[1.5] font-light lg:text-2xl ${light ? 'text-white' : 'text-ink'}`}
-          >
+          <p className={`fl-lead leading-[1.5] font-light ${light ? 'text-white' : 'text-ink'}`}>
             {description}
           </p>
         )}

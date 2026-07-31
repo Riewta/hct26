@@ -61,15 +61,15 @@ const ILLUSTRATIONS = [
 ]
 
 /** Figma gives these cards a 20px shadow — softer than the 40px `shadow-soft` elsewhere. */
-const CARD = 'rounded-3xl bg-white p-6 shadow-soft'
+const CARD = 'rounded-3xl bg-white p-[calc(20px_+_4*var(--fl))] shadow-soft'
 
 const [ENTRANT_DOCS, ADVISOR_DOCS] = DOCUMENT_GROUPS
 
 function DocGroup({ heading, items }: (typeof DOCUMENT_GROUPS)[number]) {
   return (
     <div className="flex flex-col gap-4">
-      <h4 className="text-center text-xl leading-[1.5] font-medium lg:text-[22px]">{heading}</h4>
-      <ul className="ms-[30px] flex list-disc flex-col text-lg leading-[1.5] font-light lg:text-xl">
+      <h4 className="fl-body-lg text-center leading-[1.5] font-medium">{heading}</h4>
+      <ul className="fl-body ms-[30px] flex list-disc flex-col leading-[1.5] font-light">
         {items.map((item) => (
           <li key={item}>{item}</li>
         ))}
@@ -85,7 +85,7 @@ export default function Steps() {
   return (
     // Figma: the header sits flush at the section top — the run-up above it belongs to
     // the calendar's tail. 109 of tail here carries the row into the red prize band.
-    <section id="steps" className="relative px-4 pt-20 pb-24 lg:px-15 lg:pt-0 lg:pb-[109px]">
+    <section id="steps" className="shell sec-steps relative">
       <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col gap-10">
         <div ref={head.ref} className={head.cls}>
           <SectionHeader number="02" title="ขั้นตอนสมัครเข้าแข่งขัน" />
@@ -98,17 +98,22 @@ export default function Steps() {
         >
           <div className="flex min-w-0 flex-col justify-center gap-6">
             {STEP_CARDS.map((card, i) => (
-              <article key={card.title} className={`flex flex-col gap-8 lg:gap-15 ${CARD}`}>
+              <article
+                key={card.title}
+                className={`flex flex-col gap-[calc(32px_+_28*var(--fl))] ${CARD}`}
+              >
                 {ILLUSTRATIONS[i]}
                 <div className="flex flex-col items-center gap-4 text-center">
-                  <h3 className="text-2xl leading-[1.4] font-semibold lg:text-3xl">{card.title}</h3>
-                  <p className="text-lg leading-[1.5] font-light lg:text-xl">{card.body}</p>
+                  <h3 className="fl-title leading-[1.4] font-semibold">{card.title}</h3>
+                  <p className="fl-body leading-[1.5] font-light">{card.body}</p>
                 </div>
               </article>
             ))}
           </div>
 
-          <article className={`flex min-w-0 flex-col justify-between gap-8 lg:gap-15 ${CARD}`}>
+          <article
+            className={`flex min-w-0 flex-col justify-between gap-[calc(32px_+_28*var(--fl))] ${CARD}`}
+          >
             <div className="relative mx-auto aspect-[540/290] w-full max-w-[540px]">
               <img
                 src={documentsPhoto}
@@ -121,7 +126,7 @@ export default function Steps() {
             {/* the entrant list belongs to the heading — only the advisor block is 24 away */}
             <div className="flex flex-col gap-6">
               <div className="flex flex-col gap-4">
-                <h3 className="text-center text-2xl leading-[1.4] font-semibold lg:text-3xl">
+                <h3 className="fl-title text-center leading-[1.4] font-semibold">
                   การเตรียมเอกสาร
                 </h3>
                 <DocGroup {...ENTRANT_DOCS} />

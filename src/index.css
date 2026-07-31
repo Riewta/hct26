@@ -2,6 +2,7 @@
 @import './styles/auth-motion.css';
 @import './styles/micro-motion.css';
 @import './styles/pasta-motion.css';
+@import './styles/liquid.css';
 
 @theme {
   --font-thai: 'Noto Sans Thai', sans-serif;
@@ -35,6 +36,227 @@
    * is a box-shadow, so 40 is the matching value.
    */
   --shadow-soft: 0 0 40px rgb(0 0 0 / 0.05);
+}
+
+/* ==========================================================================
+   Fluid scale
+   ==========================================================================
+
+   Every size on this site was transcribed from the Figma 1440 frame as a hard px,
+   with a second hard px behind `lg:`. That gave the site exactly two sizes — a
+   "mobile" one and a "1440" one — with a jump at 1024 and nothing in between. Past
+   1440 the 1200 column stayed 1200, so a wide display showed a small block flanked
+   by big margins.
+
+   Everything below is driven by two ramps. Both are *lengths* that run 0px → 1px,
+   which is what lets a token be written as `calc(MIN + DELTA * var(--ramp))`:
+   a unitless number times a length is a length, so no per-token clamp() is needed
+   and every value is readable as "starts here, moves by this much".
+
+     --fl   375 → 1440.  Type, gutters, control sizes, gaps.
+     --flv  375 → 1024.  Section vertical padding only.
+
+   Why two. The Figma value must be reached at exactly 1440 and must not move above
+   it, because the page's decorations are painted on fixed 1440-wide canvases
+   (HomeBackground, AboutDecor, HallOfFameDecor) with every prop pinned in absolute
+   px. `--fl` therefore tops out at 1440 and freezes — content above 1440 keeps the
+   design's geometry rather than growing away from the art behind it.
+
+   Vertical is stricter still. Those same canvases pin their props at absolute *y*,
+   so shortening a section's tail slides the content off its decoration. From 1024
+   up the vertical rhythm is already at its Figma value today, and that is the band
+   where the canvases are visible — so `--flv` reaches the Figma value at 1024 and
+   holds. Below 1024 it ramps, which removes the old jump at the `lg` breakpoint
+   without moving anything the decorations are registered against. */
+:root {
+  --fl: clamp(0px, calc((100vw - 375px) / 1065), 1px);
+  --flv: clamp(0px, calc((100vw - 375px) / 649), 1px);
+
+  /* Content gutter. 16 at 375 → 120 at 1440, where it meets the 1200 column that
+     `max-w-[1200px]` caps: 120 + 1200 + 120 = the 1440 frame exactly. The old
+     `px-4 lg:px-15` only ever reached 60, so between 1024 and 1440 the full-size
+     1440 typography sat in a column barely narrower than the viewport — which is
+     what made the proportions read as too big and too wide. */
+  --fl-gutter: calc(16px + 104 * var(--fl));
+
+  /* The nav pill and the footer sit in Figma's wider 1320 column, inset 60. */
+  --fl-gutter-wide: calc(16px + 44 * var(--fl));
+}
+
+/* The two content shells. The inner column keeps its own `max-w-*`, so the shell
+   only ever supplies the gutter and the cap is still visible at the call site. */
+@utility shell {
+  padding-inline: var(--fl-gutter);
+}
+
+@utility shell-wide {
+  padding-inline: var(--fl-gutter-wide);
+}
+
+/* --------------------------------------------------------------- type ramp
+   One utility per distinct size *pair* in the design, replacing a `text-a lg:text-b`
+   couple with a single continuously interpolated value. Named for the role rather
+   than the size so the call sites stay legible; the px pair is the comment. */
+
+@utility fl-eyebrow {
+  font-size: calc(18px + 6 * var(--fl)); /* 18 → 24 */
+}
+
+@utility fl-display {
+  font-size: calc(30px + 18 * var(--fl)); /* 30 → 48 */
+}
+
+@utility fl-title {
+  font-size: calc(24px + 6 * var(--fl)); /* 24 → 30 */
+}
+
+@utility fl-title-sm {
+  font-size: calc(20px + 8 * var(--fl)); /* 20 → 28 */
+}
+
+@utility fl-title-alt {
+  font-size: calc(24px + 4 * var(--fl)); /* 24 → 28 */
+}
+
+@utility fl-lead {
+  font-size: calc(16px + 8 * var(--fl)); /* 16 → 24 */
+}
+
+/* Body copy that also lands on 24 at 1440 but starts a step up from `fl-lead`. */
+@utility fl-copy {
+  font-size: calc(18px + 6 * var(--fl)); /* 18 → 24 */
+}
+
+@utility fl-body {
+  font-size: calc(18px + 2 * var(--fl)); /* 18 → 20 */
+}
+
+@utility fl-body-lg {
+  font-size: calc(20px + 2 * var(--fl)); /* 20 → 22 */
+}
+
+@utility fl-num-lg {
+  font-size: calc(30px + 10 * var(--fl)); /* 30 → 40 */
+}
+
+@utility fl-num-xl {
+  font-size: calc(36px + 24 * var(--fl)); /* 36 → 60 */
+}
+
+/* The nav row and its CTA. These had no `lg:` pair at all — a flat 20px that only
+   ever rendered at 1024+, which left the tablet band carrying desktop-size chrome. */
+@utility fl-nav {
+  font-size: calc(16px + 4 * var(--fl)); /* 16 → 20 */
+}
+
+/* -------------------------------------------------------- the flat px ladder
+   The dashboard and the 404 were transcribed with no `lg:` pair at all — a single
+   hard px that rendered at full desktop size on a 375 phone. Each utility is named
+   for its Figma value and ramps up to it, so `text-[24px]` becomes `fl-24` and the
+   1440 render is byte-identical while every width below it steps down. */
+@utility fl-40 {
+  font-size: calc(28px + 12 * var(--fl)); /* 28 → 40 */
+}
+@utility fl-24 {
+  font-size: calc(20px + 4 * var(--fl)); /* 20 → 24 */
+}
+@utility fl-20 {
+  font-size: calc(16px + 4 * var(--fl)); /* 16 → 20 */
+}
+@utility fl-18 {
+  font-size: calc(15px + 3 * var(--fl)); /* 15 → 18 */
+}
+@utility fl-16 {
+  font-size: calc(14px + 2 * var(--fl)); /* 14 → 16 */
+}
+@utility fl-14 {
+  font-size: calc(13px + 1 * var(--fl)); /* 13 → 14 */
+}
+@utility fl-12 {
+  font-size: calc(11px + 1 * var(--fl)); /* 11 → 12 */
+}
+
+/* The dashboard's own column: Figma insets a 1240 content block by 100 in the 1440
+   frame, so this shell tops out at 100 rather than the marketing pages' 120. */
+@utility shell-dash {
+  padding-inline: calc(16px + 84 * var(--fl));
+}
+
+/* ------------------------------------------------------- section vertical pads
+   One class per section, all on `--flv`. Kept here rather than as arbitrary
+   Tailwind values because each is a two-number interpolation and the arithmetic is
+   worth reading in one place; the Figma value is the second number in each pair. */
+
+@utility sec-hall-hero {
+  padding-top: calc(160px + 126.6 * var(--flv)); /* → 286.6 */
+  padding-bottom: calc(80px + 69.6 * var(--flv)); /* → 149.6 */
+}
+
+@utility sec-hall-timeline {
+  padding-bottom: calc(64px - 64 * var(--flv)); /* → 0, the waves butt straight on */
+}
+
+@utility sec-calendar {
+  padding-top: calc(80px + 8.5 * var(--flv)); /* → 88.5 */
+  padding-bottom: calc(96px + 355.5 * var(--flv)); /* → 451.5, the garlic/fork tail */
+}
+
+@utility sec-steps {
+  padding-top: calc(80px - 80 * var(--flv)); /* → 0, the run-up is the calendar's tail */
+  padding-bottom: calc(96px + 13 * var(--flv)); /* → 109 */
+}
+
+@utility sec-prizes {
+  padding-block: calc(80px + 85.5 * var(--flv)); /* → 165.5 */
+}
+
+@utility sec-scope {
+  padding-top: calc(160px + 59 * var(--flv)); /* → 219 */
+  padding-bottom: calc(80px + 117 * var(--flv)); /* → 197 */
+}
+
+@utility sec-codern {
+  padding-top: calc(80px - 70 * var(--flv)); /* → 10 */
+  padding-bottom: calc(80px + 34.3 * var(--flv)); /* → 114.3 */
+}
+
+@utility sec-faq {
+  padding-block: calc(80px + 44.705 * var(--flv)); /* → 124.705 */
+}
+
+/*
+ * The hall-of-fame closing band. Its art is pinned to the 1440 canvas like every other
+ * decoration, but unlike the others it is a full-bleed band with no copy in it, so past
+ * 1440 a fixed stage just leaves white down both sides — the red mass is a finite drawing
+ * and simply runs out. Here the stage grows with the viewport instead.
+ *
+ * `tan(atan2(a, b))` is the standard way to get a unitless ratio out of two lengths:
+ * calc() will not divide a length by a length, but atan2 takes two lengths and returns an
+ * angle, and tan turns that back into the plain number a/b. Floored at 1 so nothing at or
+ * below 1440 moves — that geometry is the design and was measured against it.
+ *
+ * The height has to track the scale or the band would keep its 906 while the art inside it
+ * grew past the clip. Below lg the two step values are unchanged.
+ */
+.hof-band {
+  --hof-scale: 0.45;
+  height: calc(906px * var(--hof-scale));
+}
+
+.hof-stage {
+  transform: scale(var(--hof-scale));
+}
+
+@media (width >= 48rem) {
+  .hof-band {
+    --hof-scale: 0.7;
+  }
+}
+
+@media (width >= 64rem) {
+  .hof-band {
+    --hof-scale: max(1, tan(atan2(100vw, 1440px)));
+  }
 }
 
 html {

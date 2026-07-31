@@ -11,7 +11,7 @@ export default function CodernSection() {
   const card = useReveal()
 
   return (
-    <section id="codern" className="relative px-4 py-20 lg:px-[120px] lg:pt-[10px] lg:pb-[114.3px]">
+    <section id="codern" className="shell sec-codern relative">
       {/*
        * Decoration / Circle (708:740): a 20%-opacity #D79A4E blob under a 400px Gaussian
        * blur, turned 90° and flipped. The export already contains the blur, which is why
@@ -56,12 +56,12 @@ export default function CodernSection() {
           />
         </div>
 
-        <div className="flex w-full flex-col gap-5 p-6 lg:gap-5 lg:p-10">
-          <p className="text-lg leading-[1.5] font-medium text-brand-yellow lg:text-2xl">02</p>
+        <div className="flex w-full flex-col gap-5 p-[calc(24px_+_16*var(--fl))]">
+          <p className="fl-eyebrow leading-[1.5] font-medium text-brand-yellow">02</p>
           <div className="flex flex-col gap-1">
-            <h2 className="text-3xl leading-[1.4] font-semibold lg:text-5xl">แพลตฟอร์ม Codern</h2>
+            <h2 className="fl-display leading-[1.4] font-semibold">แพลตฟอร์ม Codern</h2>
             {/* one blank 36px line between the paragraphs, as Figma sets them */}
-            <div className="flex flex-col gap-6 text-base leading-[1.5] font-light lg:gap-9 lg:text-2xl">
+            <div className="fl-lead flex flex-col gap-[calc(24px_+_12*var(--fl))] leading-[1.5] font-light">
               {CODERN_PARAGRAPHS.map((p) => (
                 <p key={p}>{p}</p>
               ))}

@@ -14,6 +14,7 @@ import SuccessStep from './pages/register/SuccessStep'
 import ErrorStep from './pages/register/ErrorStep'
 import MyTeam from './pages/MyTeam'
 import NotFound from './pages/NotFound'
+import { useAuthNavHistory } from './components/form/wizardNav'
 
 /** Marketing pages share the nav + footer chrome; the auth screens stand alone. */
 function SiteLayout() {
@@ -29,6 +30,12 @@ function SiteLayout() {
 }
 
 export default function App() {
+  /*
+   * The auth flow's view transitions are direction-aware, and the browser's back button
+   * is the one navigation no link can flag — see form/wizardNav.ts.
+   */
+  useAuthNavHistory()
+
   return (
     <Routes>
       <Route element={<SiteLayout />}>

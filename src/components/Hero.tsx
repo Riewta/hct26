@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom'
 import { HeroMobileDecor } from './HomeBackground'
+import LiquidButton from './LiquidButton'
 import { HERO_LINES } from '../data'
 import { useReveal } from '../hooks/useReveal'
 
@@ -66,7 +66,9 @@ export default function Hero() {
   return (
     // Figma runs the pasta past every edge of the masthead, so this section must not clip;
     // the 379 tail below the CTA is the run-up to the calendar section.
-    <section id="hero" className="relative px-4 pt-32 pb-40 lg:px-15 lg:pt-[183px] lg:pb-[379px]">
+    // The two-step lg: sizes are gone: `hero-*` in styles/liquid.css interpolates the
+    // padding, type and CTA between a 375 floor and the exact Figma values at 1440.
+    <section id="hero" className="hero-pad relative">
       {/* Narrow viewports only — the 1440 canvas is hidden there. See HomeBackground. */}
       <HeroMobileDecor />
 
@@ -94,7 +96,7 @@ export default function Hero() {
           </div>
         </div>
 
-        <p className="mt-[42px] w-full max-w-[954px] text-base leading-[1.5] font-light lg:text-2xl">
+        <p className="hero-lead w-full max-w-[954px] font-light">
           {HERO_LINES.map((line) => (
             <span key={line} className="block">
               {line}
@@ -102,14 +104,19 @@ export default function Hero() {
           ))}
         </p>
 
-        <Link
+        {/* The one control carrying the liquid behaviour so far: it deforms under the
+            pointer, can be dragged and springs home. See LiquidButton for the model.
+            `mm-press` is deliberately absent — the press feedback is the spring's now. */}
+        <LiquidButton
           to="/signin"
-          className="mm-press mt-[38px] flex items-center gap-3 rounded-[100px] bg-brand-red py-4 pr-4 pl-6 text-base leading-[1.4] font-bold text-white transition-opacity hover:opacity-90 sm:gap-5 sm:pr-6 sm:pl-10 sm:text-lg lg:text-2xl"
+          className="hero-cta font-bold text-white"
+          fillClassName="bg-brand-red"
         >
           ลงทะเบียนเข้าร่วมการแข่งขัน
-          {/* the glyph sits inside a 34px cell — Figma insets it rather than scaling it. The
+          {/* the glyph sits inside a 34px cell at 1440 — Figma insets it rather than
+              scaling it, so the inset stays a percentage of whatever the cell becomes. The
               lean on hover is gated on a fine pointer, since touch fires :hover on tap. */}
-          <span className="mm-arrow-shift relative block size-[34px] shrink-0 overflow-hidden">
+          <span className="hero-cta-icon mm-arrow-shift relative block shrink-0 overflow-hidden">
             <img
               src={arrowUpRight}
               alt=""
@@ -117,7 +124,7 @@ export default function Hero() {
               className="absolute inset-[20.81%_20.8%_22.32%_22.32%] max-w-none"
             />
           </span>
-        </Link>
+        </LiquidButton>
       </div>
     </section>
   )

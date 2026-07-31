@@ -18,10 +18,8 @@ function Field({
 }) {
   return (
     <div className="flex min-w-0 flex-1 flex-col items-start gap-[4px]">
-      <p className={`text-[14px] leading-[1.6] text-gray-2 ${light ? 'font-light' : ''}`}>
-        {label}
-      </p>
-      <div className="text-[16px] leading-[1.6]">{children}</div>
+      <p className={`fl-14 leading-[1.6] text-gray-2 ${light ? 'font-light' : ''}`}>{label}</p>
+      <div className="fl-16 leading-[1.6]">{children}</div>
     </div>
   )
 }
@@ -31,7 +29,7 @@ function Separator() {
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <h2 className="w-full text-[20px] leading-[1.4] font-medium">{children}</h2>
+  return <h2 className="w-full fl-20 leading-[1.4] font-medium">{children}</h2>
 }
 
 export default function PersonDetails({ person }: { person: Person }) {
@@ -95,7 +93,7 @@ export default function PersonDetails({ person }: { person: Person }) {
             key={doc.label}
             className="flex w-full flex-col items-start gap-2 lg:flex-row lg:gap-[50px]"
           >
-            <p className="text-[16px] leading-[1.6] font-light text-gray-2 lg:w-[450px] lg:shrink-0">
+            <p className="fl-16 leading-[1.6] font-light text-gray-2 lg:w-[450px] lg:shrink-0">
               {doc.label}
             </p>
             <a
@@ -108,8 +106,8 @@ export default function PersonDetails({ person }: { person: Person }) {
                 aria-hidden
                 className="mm-icon-pop size-[24px] shrink-0"
               />
-              <span className="text-[16px] leading-[1.6]">{doc.file}</span>
-              <span className="text-[16px] leading-[1.6] font-light text-gray-2">{doc.size}</span>
+              <span className="fl-16 leading-[1.6]">{doc.file}</span>
+              <span className="fl-16 leading-[1.6] font-light text-gray-2">{doc.size}</span>
             </a>
           </div>
         ))}

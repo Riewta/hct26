@@ -99,10 +99,18 @@ export default function ContactSection() {
               alt="แผนที่ที่ตั้งภาควิชาวิศวกรรมคอมพิวเตอร์ มจธ."
               className="absolute top-[-30.29%] left-[-14.86%] h-[168.63%] w-[129.72%] max-w-none"
             />
+            {/*
+             * The band stays Figma's 344, but both ramps finish well before the top of it.
+             * Run to full height they fog the entire lower half of the map, which is the one
+             * thing this overlay is not meant to do — the address needs a backing, the
+             * photograph underneath it does not need covering.
+             */}
             <ScrollEdgeEffect
               tone="dark"
               flip
               maskAlpha={0.9}
+              tintReach={0.45}
+              blurReach={0.6}
               className="absolute inset-x-0 bottom-0 h-[344px] rounded-b-3xl"
             />
           </div>

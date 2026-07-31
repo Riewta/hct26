@@ -1,5 +1,6 @@
-/* Auth-flow motion (sign-in → registration morph, wizard steps, pepper spin).
-   Owned by the auth-animation track — keep other global motion in micro-motion.css. */
+/* Auth-flow motion (sign-in entrance, the screen-to-screen morphs, wizard steps,
+   modals, parallax). Owned by the auth-animation track — keep other global motion in
+   micro-motion.css. */
 
 /*
  * Curves, not durations, are what make these read as intentional. The stock CSS
@@ -46,6 +47,138 @@
   will-change: transform;
 }
 
+/* ---------------------------------------------------- sign-in entrance ---- */
+
+/*
+ * The sign-in screen arrives rather than appearing: the three colour blocks lift into
+ * place, the pan follows, then the eggs, then the shaker ring — one composed entrance
+ * read from back to front, which is the order the collage is stacked in Figma 708:1223.
+ *
+ * It is gated on an attribute (`[data-auth-entrance]`) rather than baked into the
+ * classes because the same elements are view-transition participants: arriving at
+ * /signin from the registration gate (browser back) has already animated these exact
+ * boxes, and replaying the entrance on top of that would double the motion. SignIn
+ * decides once, at mount, whether the attribute is present (see pages/SignIn.tsx);
+ * with the attribute absent every element simply renders in its final state, so
+ * nothing can be left invisible.
+ *
+ * Distance is a variable so the artwork can travel further than the copy: 48px reads
+ * as a large object settling, while 14px under a heading is a nudge, not a slide.
+ *
+ * `backwards`, never `forwards`: a forwards-filled animation keeps overriding `transform`
+ * and `opacity` for the life of the element, which would silently kill the sign-in
+ * button's `active:scale` and every hover opacity on the screen. Backwards fill holds the
+ * start frame through the delay and then lets go entirely.
+ */
+@keyframes auth-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, var(--auth-rise-y, 48px), 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+[data-auth-entrance] .auth-rise {
+  animation: auth-rise 560ms var(--ease-out-auth) backwards;
+}
+
+/* copy and controls travel a fraction of what the collage does */
+.auth-rise-sm {
+  --auth-rise-y: 14px;
+}
+
+/*
+ * Stagger, not a formula: 50-60ms between neighbours is the window Emil's notes give
+ * for a cascade that still reads as one gesture. The last delay lands at 330ms, so the
+ * whole entrance is over inside 900ms.
+ */
+.auth-rise[data-rise='0'] {
+  animation-delay: 0ms;
+}
+.auth-rise[data-rise='1'] {
+  animation-delay: 60ms;
+}
+.auth-rise[data-rise='2'] {
+  animation-delay: 110ms;
+}
+.auth-rise[data-rise='3'] {
+  animation-delay: 160ms;
+}
+.auth-rise[data-rise='4'] {
+  animation-delay: 210ms;
+}
+.auth-rise[data-rise='5'] {
+  animation-delay: 250ms;
+}
+.auth-rise[data-rise='6'] {
+  animation-delay: 290ms;
+}
+.auth-rise[data-rise='7'] {
+  animation-delay: 330ms;
+}
+
+/* ------------------------------------------------------------ parallax ---- */
+
+/*
+ * Two kinds, both transform-only.
+ *
+ * `.auth-depth` layers are driven from the pointer by AuthBackdrop, which writes a
+ * transform straight onto each layer element every frame. It writes the element's own
+ * transform rather than a custom property on the collage root on purpose: a variable
+ * change on the parent would restyle all fifteen children each frame (Emil's note on
+ * inheritable custom properties), where eight direct transform writes touch nothing else.
+ */
+.auth-depth {
+  will-change: transform;
+}
+
+/*
+ * The scroll parallax is declared, not listened for: `scroll(root block)` ties progress
+ * to the document scroller on the compositor, so there is no scroll handler and no
+ * chance of layout work per frame. Behind the feature check the elements simply sit at
+ * their `from` value, which is the identity transform — the un-parallaxed design.
+ *
+ * `animation-duration: auto` is stated explicitly because the `animation` shorthand
+ * would reset it to 0s in engines that predate the scroll-timeline default.
+ */
+@keyframes auth-parallax-lag {
+  to {
+    transform: translate3d(0, 80px, 0);
+  }
+}
+
+@keyframes auth-parallax-lead {
+  to {
+    transform: translate3d(0, -60px, 0);
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .auth-parallax-lag,
+    .auth-parallax-lead {
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-duration: auto;
+      animation-timeline: scroll(root block);
+      will-change: transform;
+    }
+
+    /* the far layer lags the page, so it reads as sitting behind it */
+    .auth-parallax-lag {
+      animation-name: auth-parallax-lag;
+    }
+
+    /* the near layer outruns it, which is what separates the two planes */
+    .auth-parallax-lead {
+      animation-name: auth-parallax-lead;
+    }
+  }
+}
+
 /* -------------------------------------------- sign-in → registration ---- */
 
 /*
@@ -63,6 +196,14 @@
  * into the API when `document.startViewTransition` exists, so the navigation simply
  * happens plainly. Nothing here can leave an element stuck or invisible, because
  * every rule below styles pseudo-elements that exist only mid-transition.
+ *
+ * Which hop is running is published on `<html data-auth-nav>` by form/wizardNav.ts,
+ * because the API itself has no notion of where the user came from:
+ *
+ *   gate    sign-in → the registration gate
+ *   enter   the gate → the first wizard step
+ *   forward / back   step ↔ step, and error → terms
+ *   submit  the last step → the success or error screen
  */
 @supports (view-transition-name: none) {
   .auth-block-red {
@@ -111,21 +252,88 @@
   }
 
   /*
-   * The requirements sheet has no counterpart on sign-in, so it is a pure entry: it
-   * rises over the blocks still travelling underneath it. 40px is its own travel
-   * rather than a percentage, because the sheet is 850+ tall and a percentage would
-   * start it below the fold.
+   * The wizard paints no colour at all, so on the way in the blocks have no counterpart
+   * to morph into and on the way out no counterpart to morph from. Rather than let them
+   * blink, they sink out of the page and rise back into it — the same direction the
+   * sign-in entrance uses, so colour always enters this flow from below.
+   */
+  :root[data-auth-nav='enter'] ::view-transition-old(auth-block-red),
+  :root[data-auth-nav='enter'] ::view-transition-old(auth-block-green),
+  :root[data-auth-nav='enter'] ::view-transition-old(auth-block-amber) {
+    animation: auth-block-sink 340ms var(--ease-morph) both;
+  }
+
+  :root[data-auth-nav='submit'] ::view-transition-new(auth-block-red),
+  :root[data-auth-nav='submit'] ::view-transition-new(auth-block-green),
+  :root[data-auth-nav='submit'] ::view-transition-new(auth-block-amber) {
+    animation: auth-block-arrive 520ms var(--ease-out-auth) both;
+  }
+
+  /*
+   * One white plate runs the whole flow: the requirements card on the gate becomes the
+   * wizard's form card becomes the success/error card. Naming all three `auth-sheet`
+   * means the plate is the thing that persists on every hop and only its contents
+   * change — the continuity the rest of these rules are built around.
    */
   .auth-sheet {
     view-transition-name: auth-sheet;
   }
 
-  ::view-transition-new(auth-sheet) {
-    animation: auth-sheet-rise 460ms var(--ease-sheet) both;
+  /*
+   * Between wizard steps the plate must NOT animate its box: the form inside is pinned
+   * to the new step's geometry immediately (see `wizard-body` below), and a plate still
+   * travelling towards a taller step's height would let that form hang out of it. So the
+   * box snaps and only the three screen changes that actually change plate get the morph.
+   */
+  ::view-transition-group(auth-sheet) {
+    animation-duration: 0s;
+  }
+
+  :root[data-auth-nav='gate'] ::view-transition-group(auth-sheet),
+  :root[data-auth-nav='enter'] ::view-transition-group(auth-sheet),
+  :root[data-auth-nav='submit'] ::view-transition-group(auth-sheet) {
+    animation-duration: 520ms;
+    animation-timing-function: var(--ease-morph);
   }
 
   ::view-transition-old(auth-sheet) {
     animation: auth-fade-out 200ms ease-out both;
+  }
+
+  ::view-transition-new(auth-sheet) {
+    animation: auth-fade-in 380ms var(--ease-out-auth) both;
+  }
+
+  /*
+   * Sign-in has no plate, so that one hop is a pure entry: the card rises over the
+   * blocks still travelling underneath it. 40px is its own travel rather than a
+   * percentage, because the card is 850+ tall and a percentage would start it below
+   * the fold.
+   */
+  :root[data-auth-nav='gate'] ::view-transition-new(auth-sheet) {
+    animation: auth-sheet-rise 460ms var(--ease-sheet) both;
+  }
+
+  /*
+   * The account chip and the "หน้าหลัก" link are the same two controls in the same
+   * corner on the gate, on every wizard step and on the results, so the top bar is
+   * named too and holds its position while its plate changes shape underneath it.
+   */
+  .auth-topbar {
+    view-transition-name: auth-topbar;
+  }
+
+  ::view-transition-group(auth-topbar) {
+    animation-duration: 360ms;
+    animation-timing-function: var(--ease-morph);
+  }
+
+  ::view-transition-old(auth-topbar) {
+    animation: auth-fade-out 180ms ease-out both;
+  }
+
+  ::view-transition-new(auth-topbar) {
+    animation: auth-fade-in 300ms var(--ease-out-auth) both;
   }
 
   /* whatever is left over — the sign-in form, the sheet's own copy — just crossfades */
@@ -143,6 +351,28 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes auth-block-sink {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, 48px, 0);
+  }
+}
+
+@keyframes auth-block-arrive {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 48px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
   }
 }
 
@@ -168,24 +398,20 @@
 
 /*
  * Between wizard steps the chrome should hold still and only the form should move.
- * Naming the header, the progress bar and the decoration lifts each out of the root
- * snapshot so none of them flash; the form body is the only thing that travels.
+ * Naming the progress bar and the decoration lifts each out of the root snapshot so
+ * none of them flash; the form body is the only thing that travels.
  *
  * Its group animation is switched off (`0s`), which pins the box to the new step's
  * geometry immediately and leaves the two snapshots to slide past each other on
  * transform and opacity alone — no animated height, even though the steps differ a
  * lot in length.
  *
- * Direction comes from a `data-wizard-nav` flag on the root element, set by the step
+ * Direction comes from the `data-auth-nav` flag on the root element, set by the step
  * links and by the browser's own back button (see form/wizardNav.ts). Forward reads
  * leftwards, back reads rightwards; that spatial consistency is what makes the back
  * button feel like an undo rather than a fresh page.
  */
 @supports (view-transition-name: none) {
-  .wizard-header {
-    view-transition-name: wizard-header;
-  }
-
   .wizard-progress {
     view-transition-name: wizard-progress;
   }
@@ -220,6 +446,20 @@
     animation: auth-fade-in 320ms var(--ease-out-auth) both;
   }
 
+  /*
+   * The pasta is the wizard's signature, and Figma spills it in from the frame's top
+   * right corner — so that is the corner it arrives from when the wizard opens and
+   * leaves towards when the wizard is submitted. Only those two hops: between steps the
+   * cluster has a counterpart on both sides and must not move at all.
+   */
+  :root[data-auth-nav='enter'] ::view-transition-new(wizard-pasta) {
+    animation: wizard-pasta-arrive 560ms var(--ease-out-auth) both;
+  }
+
+  :root[data-auth-nav='submit'] ::view-transition-old(wizard-pasta) {
+    animation: wizard-pasta-leave 320ms ease-out both;
+  }
+
   /* forward — the default, so a missing flag still reads correctly */
   ::view-transition-old(wizard-body) {
     animation: wizard-exit-back 200ms ease-out both;
@@ -229,11 +469,11 @@
     animation: wizard-enter-forward 300ms var(--ease-out-auth) both;
   }
 
-  :root[data-wizard-nav='back'] ::view-transition-old(wizard-body) {
+  :root[data-auth-nav='back'] ::view-transition-old(wizard-body) {
     animation: wizard-exit-forward 200ms ease-out both;
   }
 
-  :root[data-wizard-nav='back'] ::view-transition-new(wizard-body) {
+  :root[data-auth-nav='back'] ::view-transition-new(wizard-body) {
     animation: wizard-enter-back 300ms var(--ease-out-auth) both;
   }
 }
@@ -287,15 +527,203 @@
   }
 }
 
+@keyframes wizard-pasta-arrive {
+  from {
+    opacity: 0;
+    transform: translate3d(56px, -56px, 0) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes wizard-pasta-leave {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(40px, -40px, 0);
+  }
+}
+
+/*
+ * The progress bar advances by drawing the newly-reached segment on rather than having
+ * it already be there. The delay is one step-transition long, so the sweep starts as
+ * the incoming step settles: first the form arrives, then the progress confirms it.
+ * `scaleX` from a left origin — the bar's width never changes, only what fills it.
+ */
+@keyframes wizard-progress-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.wizard-progress-fill {
+  transform-origin: left center;
+  animation: wizard-progress-fill 420ms var(--ease-out-auth) 300ms backwards;
+}
+
+/* --------------------------------------------------------------- modals ---- */
+
+/*
+ * Scrim and sheet are two parts of one gesture, not one fade: the scrim dims the page
+ * first and quickly, the sheet takes longer to arrive over it, and on the way out the
+ * sheet leaves before the dimming lifts. Both are driven by a `data-state` the modal
+ * flips a frame after mount and back before unmount, so the exit is as considered as
+ * the entrance.
+ *
+ * The opacity states sit outside the reduced-motion guard so a modal always fades;
+ * only the travel and the scale are conditional.
+ */
+.auth-modal-scrim,
+.auth-modal-sheet {
+  opacity: 0;
+}
+
+.auth-modal-scrim[data-state='open'],
+.auth-modal-sheet[data-state='open'] {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .auth-modal-scrim {
+    transition: opacity 180ms ease-out;
+  }
+
+  .auth-modal-scrim[data-state='open'] {
+    transition-duration: 240ms;
+  }
+
+  /*
+   * `--auth-origin-x/y` are measured from the control that opened the sheet, so the
+   * policy modal grows out of the row the user pressed instead of out of thin air
+   * (Apple's spatial-consistency rule, and it exits back to the same point). Their
+   * fallback is the centre, which is correct for a modal with no trigger to grow from.
+   *
+   * 0.96 rather than 0: nothing in the real world appears from nothing.
+   */
+  .auth-modal-sheet {
+    transform: translate3d(0, 12px, 0) scale(0.96);
+    transform-origin: var(--auth-origin-x, 50%) var(--auth-origin-y, 50%);
+    transition:
+      opacity 190ms ease-out,
+      transform 190ms ease-out;
+  }
+
+  .auth-modal-sheet[data-state='open'] {
+    transform: translate3d(0, 0, 0) scale(1);
+    transition:
+      opacity 300ms var(--ease-out-auth),
+      transform 300ms var(--ease-out-auth);
+  }
+
+  /*
+   * The sheet's three regions settle behind it rather than with it — the stagger is
+   * what stops a large dialogue reading as one stiff plate. Delays only on the way in:
+   * on the way out everything leaves together, immediately.
+   */
+  .auth-modal-part {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+    transition:
+      opacity 160ms ease-out,
+      transform 160ms ease-out;
+  }
+
+  .auth-modal-sheet[data-state='open'] .auth-modal-part {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    transition:
+      opacity 280ms var(--ease-out-auth),
+      transform 280ms var(--ease-out-auth);
+  }
+
+  .auth-modal-sheet[data-state='open'] .auth-modal-part:nth-child(1) {
+    transition-delay: 70ms;
+  }
+
+  .auth-modal-sheet[data-state='open'] .auth-modal-part:nth-child(2) {
+    transition-delay: 120ms;
+  }
+
+  .auth-modal-sheet[data-state='open'] .auth-modal-part:nth-child(3) {
+    transition-delay: 170ms;
+  }
+
+  .auth-modal-sheet[data-state='open'] .auth-modal-part:nth-child(4) {
+    transition-delay: 210ms;
+  }
+
+  /*
+   * The page behind a modal is pushed back a hair. Apple's rule for a modal task: dim
+   * to focus, and move the parent layer away so the two read as different planes. It is
+   * deliberately tiny — 0.6% is felt, not seen — and it sits on the wizard's content
+   * wrapper rather than its root, because the root also holds the `fixed` scrim and a
+   * transformed ancestor would become that scrim's containing block.
+   */
+  .auth-recede {
+    transition: transform 300ms var(--ease-out-auth);
+  }
+
+  .auth-recede[data-recede='true'] {
+    transform: scale(0.994);
+  }
+}
+
+/* ------------------------------------------------------ svg draw-on ---- */
+
+/*
+ * The tick draws itself instead of popping in. Consent is a deliberate, rare act, and
+ * a stroke that travels reads as "recorded" where an instant glyph reads as a redraw.
+ *
+ * `stroke-dashoffset` is neither a layout nor a paint-expensive property here — it
+ * repaints a single 16px two-segment path — and it is the only way to animate a stroke
+ * along its own length. Dash length is a little over the path's own ~13.4 units so the
+ * start frame is genuinely empty.
+ */
+@keyframes auth-check-draw {
+  from {
+    stroke-dashoffset: 16;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.auth-check-path {
+  stroke-dasharray: 16;
+  animation: auth-check-draw 260ms var(--ease-out-auth) backwards;
+}
+
 /* ----------------------------------------------------- reduced motion ---- */
 
 /*
  * Reduced motion means gentler, not absent: the navigation still crossfades so the
- * change of screen stays legible, but nothing travels and nothing turns. Last in the
- * file so it wins on the cascade without needing `!important` for the ring.
+ * change of screen stays legible, and modals still fade, but nothing travels, nothing
+ * turns and nothing draws. Last in the file so it wins on the cascade without needing
+ * `!important` for the ring.
+ *
+ * Every rule here lands the element on its final state — the ring stops wherever a
+ * full turn leaves it (0deg), the tick is fully drawn, the entrance is a plain fade —
+ * so nothing can be stuck mid-way.
  */
 @media (prefers-reduced-motion: reduce) {
   .auth-pepper-ring {
+    animation: none;
+  }
+
+  [data-auth-entrance] .auth-rise {
+    animation: auth-fade-in 200ms linear backwards;
+  }
+
+  .wizard-progress-fill,
+  .auth-check-path {
     animation: none;
   }
 

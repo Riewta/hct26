@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react'
 
 const CLOSE = '/assets/figma/4bd7505c0eec086659f8bce6f796799c7aa38350.svg'
 
-/** Matches `--mm-base` in micro-motion.css — how long the sheet needs to get out. */
-const EXIT_MS = 220
+/**
+ * Matches the closing `.auth-modal-sheet` transition in styles/auth-motion.css — shorter
+ * than the entrance, because leaving should get out of the way.
+ */
+const EXIT_MS = 200
 
 /**
  * Outcome dialog shown over the dashboard once selection results are out.
@@ -66,7 +69,7 @@ export default function ResultModal({
   return (
     <div
       data-state={state}
-      className="mm-scrim fixed inset-0 z-50 overflow-y-auto bg-[rgba(194,194,194,0.3)] backdrop-blur-[5px]"
+      className="auth-modal-scrim fixed inset-0 z-50 overflow-y-auto bg-[rgba(194,194,194,0.3)] backdrop-blur-[5px]"
       onClick={onClose}
     >
       <div className="flex min-h-full flex-col items-center justify-center px-4 py-6 lg:block lg:p-0">
@@ -76,7 +79,7 @@ export default function ResultModal({
           aria-label={title}
           data-state={state}
           onClick={(e) => e.stopPropagation()}
-          className="mm-sheet relative flex w-full max-w-[800px] flex-col items-center justify-center gap-6 rounded-[32px] border border-[#dcdcdc] bg-white p-6 lg:mx-auto lg:mt-[100px] lg:mb-[101px] lg:h-[823px] lg:w-[800px] lg:gap-8 lg:p-10"
+          className="auth-modal-sheet relative flex w-full max-w-[800px] flex-col items-center justify-center gap-6 rounded-[32px] border border-[#dcdcdc] bg-white p-6 lg:mx-auto lg:mt-[100px] lg:mb-[101px] lg:h-[823px] lg:w-[800px] lg:gap-8 lg:p-10"
         >
           <button
             type="button"
@@ -87,14 +90,23 @@ export default function ResultModal({
             <img src={CLOSE} alt="" aria-hidden className="absolute inset-0 block size-full" />
           </button>
 
+          {/*
+           * The mascot, the message and the buttons settle one after another behind the
+           * sheet rather than with it: this dialogue is a result, and a stack that arrives
+           * in sequence reads as an announcement where a single plate reads as a panel
+           * being swapped in. See `.auth-modal-part` in styles/auth-motion.css.
+           *
+           * The close button is deliberately not a part — it must be pressable the instant
+           * the sheet is there.
+           */}
           <img
             src={image}
             alt=""
             aria-hidden
-            className="size-[200px] shrink-0 object-cover sm:size-[302px]"
+            className="auth-modal-part size-[200px] shrink-0 object-cover sm:size-[302px]"
           />
 
-          <div className="flex w-full flex-col items-center gap-4 lg:gap-6">
+          <div className="auth-modal-part flex w-full flex-col items-center gap-4 lg:gap-6">
             <h2
               className={`text-center text-[24px] leading-[1.4] font-semibold lg:text-[40px] ${titleClassName}`}
             >
@@ -110,7 +122,7 @@ export default function ResultModal({
           </div>
 
           {actions && (
-            <div className="flex w-full flex-col items-start justify-center gap-4 lg:gap-6">
+            <div className="auth-modal-part flex w-full flex-col items-start justify-center gap-4 lg:gap-6">
               {actions}
             </div>
           )}

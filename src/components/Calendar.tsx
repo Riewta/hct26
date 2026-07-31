@@ -31,10 +31,7 @@ export default function Calendar() {
   return (
     // Figma: content sits 88.5 below the section top; the 451.5 tail is where the
     // garlic and fork decorations live before the next section starts.
-    <section
-      id="calendar"
-      className="relative px-4 pt-20 pb-24 lg:px-15 lg:pt-[88.5px] lg:pb-[451.5px]"
-    >
+    <section id="calendar" className="shell sec-calendar relative">
       <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col gap-10">
         <div ref={head.ref} className={head.cls}>
           <SectionHeader number="01" title="ปฏิทินการแข่งขัน" />
@@ -46,7 +43,7 @@ export default function Calendar() {
             {TIMELINE_HIGHLIGHTS.map((item) => (
               <article
                 key={item.date}
-                className={`relative flex min-h-[360px] min-w-0 flex-col justify-between gap-6 overflow-hidden rounded-3xl bg-gradient-to-b p-6 text-white lg:min-h-[500px] ${TONE[item.tone].card}`}
+                className={`relative flex min-h-[calc(360px_+_140*var(--fl))] min-w-0 flex-col justify-between gap-6 overflow-hidden rounded-3xl bg-gradient-to-b p-[calc(20px_+_4*var(--fl))] text-white ${TONE[item.tone].card}`}
               >
                 <div
                   className={`pointer-events-none absolute top-[60.8px] h-[441.197px] w-[834.211px] overflow-hidden ${TONE[item.tone].bowl}`}
@@ -59,11 +56,16 @@ export default function Calendar() {
                   />
                 </div>
                 <div className="relative">
-                  <p className="text-4xl leading-[1.4] font-medium lg:text-6xl">{item.date}</p>
-                  <p className="text-xl leading-[1.4] font-normal lg:text-[28px]">{item.label}</p>
+                  <p className="fl-num-xl leading-[1.4] font-medium">{item.date}</p>
+                  <p className="fl-title-sm leading-[1.4] font-normal">{item.label}</p>
                 </div>
-                <p className="relative flex items-center gap-3 text-base leading-[1.5] lg:text-2xl">
-                  <img src={addToCalendar} alt="" aria-hidden className="size-9 shrink-0" />
+                <p className="fl-lead relative flex items-center gap-3 leading-[1.5]">
+                  <img
+                    src={addToCalendar}
+                    alt=""
+                    aria-hidden
+                    className="size-[calc(28px_+_8*var(--fl))] shrink-0"
+                  />
                   เพิ่มไปยังปฏิทิน
                 </p>
               </article>
@@ -74,12 +76,10 @@ export default function Calendar() {
             {TIMELINE_STEPS.map((item) => (
               <article
                 key={item.date}
-                className="flex flex-col rounded-3xl bg-white p-6 shadow-soft"
+                className="flex flex-col rounded-3xl bg-white p-[calc(20px_+_4*var(--fl))] shadow-soft"
               >
-                <p className="text-3xl leading-[1.4] font-medium text-gray-2 lg:text-[40px]">
-                  {item.date}
-                </p>
-                <p className="text-lg leading-[1.4] font-light lg:text-xl">
+                <p className="fl-num-lg leading-[1.4] font-medium text-gray-2">{item.date}</p>
+                <p className="fl-body leading-[1.4] font-light">
                   {item.lines.map((line) => (
                     <span key={line} className="block">
                       {line}

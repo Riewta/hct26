@@ -101,12 +101,12 @@ export default function NotFound() {
             className="absolute top-[255px] left-[891px] block h-[411px] w-[314px]"
           />
 
-          <p className="absolute top-[774px] left-[490px] text-[40px] leading-[1.4] font-medium whitespace-nowrap text-white">
+          <p className="fl-40 absolute top-[774px] left-1/2 -translate-x-1/2 leading-[1.4] font-medium whitespace-nowrap text-white">
             {MESSAGE}
           </p>
           <Link
             to="/"
-            className="absolute top-[855px] left-[634px] text-[24px] leading-[1.4] whitespace-nowrap text-white underline decoration-solid"
+            className="fl-24 absolute top-[855px] left-1/2 -translate-x-1/2 leading-[1.4] whitespace-nowrap text-white underline decoration-solid"
           >
             {BACK}
           </Link>
@@ -121,8 +121,8 @@ export default function NotFound() {
           <ShrimpRing scale={0.24} />
           <img src={FOUR_RIGHT} alt="" aria-hidden className="block w-[74px] shrink-0" />
         </div>
-        <p className="text-center text-[24px] leading-[1.4] font-medium text-white">{MESSAGE}</p>
-        <Link to="/" className="text-[18px] leading-[1.4] text-white underline">
+        <p className="fl-24 text-center leading-[1.4] font-medium text-white">{MESSAGE}</p>
+        <Link to="/" className="fl-18 leading-[1.4] text-white underline">
           {BACK}
         </Link>
       </div>

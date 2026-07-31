@@ -18,13 +18,10 @@ export default function PastEvents() {
        * blur that reaches well past the section, and clipping it shows the fade as a seam.
        * Sideways bleed is already clipped on <html>.
        */}
-      <section
-        id="hall-of-fame"
-        className="relative px-4 pt-40 pb-20 lg:px-15 lg:pt-[286.6px] lg:pb-[149.6px]"
-      >
+      <section id="hall-of-fame" className="shell sec-hall-hero relative">
         <HallOfFameHeroDecor />
 
-        <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col gap-10 lg:gap-20">
+        <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col gap-[calc(40px_+_40*var(--fl))]">
           {/*
            * Figma stacks the two wordmarks inside a 727.492x306.895 box: "Hackathon" is
            * 96.484% as wide, indented 1.836%, and rides up into "BangMod"'s descenders.
@@ -43,12 +40,9 @@ export default function PastEvents() {
           </div>
 
           <div ref={intro.ref} className={`flex flex-col gap-6 ${intro.cls}`}>
-            <h1 className="text-2xl leading-[1.4] font-medium lg:text-3xl">{PAST_INTRO.title}</h1>
+            <h1 className="fl-title leading-[1.4] font-medium">{PAST_INTRO.title}</h1>
             {PAST_INTRO.paragraphs.map((p) => (
-              <p
-                key={p}
-                className="text-base leading-[1.5] font-light whitespace-pre-wrap lg:text-2xl"
-              >
+              <p key={p} className="fl-lead leading-[1.5] font-light whitespace-pre-wrap">
                 {p}
               </p>
             ))}
@@ -57,15 +51,15 @@ export default function PastEvents() {
       </section>
 
       {/* Figma: 40 between the title and each 1200x800 card, then straight into the waves */}
-      <section id="timeline" className="relative px-4 pb-16 lg:px-15 lg:pb-0">
-        <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col gap-10">
-          <h2
-            ref={title.ref}
-            className={`text-3xl leading-[1.4] font-semibold lg:text-5xl ${title.cls}`}
-          >
+      <section id="timeline" className="shell sec-hall-timeline relative">
+        <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col gap-[calc(24px_+_16*var(--fl))]">
+          <h2 ref={title.ref} className={`fl-display leading-[1.4] font-semibold ${title.cls}`}>
             หอเกียรติยศ
           </h2>
-          <div ref={cards.ref} className={`flex flex-col gap-10 ${cards.cls}`}>
+          <div
+            ref={cards.ref}
+            className={`flex flex-col gap-[calc(24px_+_16*var(--fl))] ${cards.cls}`}
+          >
             {PAST_EVENTS.map((event) => (
               <PastEventCard key={event.title} event={event} />
             ))}

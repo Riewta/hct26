@@ -85,10 +85,10 @@ function Row({ title, label, tone }: { title: string; label: string; tone: StepT
   return (
     <div className="flex w-full items-center gap-[8px]">
       <div className="flex min-w-0 flex-1 flex-col justify-center">
-        <p className="text-[14px] leading-normal">{title}</p>
-        <p className="text-[12px] leading-normal text-gray-2">ชื่อ-สกุล</p>
+        <p className="fl-14 leading-normal">{title}</p>
+        <p className="fl-12 leading-normal text-gray-2">ชื่อ-สกุล</p>
       </div>
-      <p className={`shrink-0 text-[14px] leading-normal ${LABEL_COLOR[tone]}`}>{label}</p>
+      <p className={`shrink-0 fl-14 leading-normal ${LABEL_COLOR[tone]}`}>{label}</p>
     </div>
   )
 }
@@ -106,11 +106,11 @@ function Step({ step }: { step: StatusStep }) {
         <div className="flex min-w-0 flex-1 flex-col justify-center gap-[12px]">
           <div className="flex w-full items-center gap-[8px]">
             <div className="flex min-w-0 flex-1 flex-col justify-center">
-              <p className="text-[14px] leading-normal font-medium">{step.title}</p>
-              <p className="text-[12px] leading-normal text-gray-2">{TEAM.updatedAt}</p>
+              <p className="fl-14 leading-normal font-medium">{step.title}</p>
+              <p className="fl-12 leading-normal text-gray-2">{TEAM.updatedAt}</p>
             </div>
             {step.label && (
-              <p className={`shrink-0 text-[14px] leading-normal ${LABEL_COLOR[step.tone]}`}>
+              <p className={`shrink-0 fl-14 leading-normal ${LABEL_COLOR[step.tone]}`}>
                 {step.label}
               </p>
             )}
@@ -126,7 +126,7 @@ function Step({ step }: { step: StatusStep }) {
         <>
           <div className="h-0 w-full border-t-[0.5px] border-[#dcdcdc]" />
           <div className="flex w-full flex-col items-start gap-[8px]">
-            <p className="text-[12px] leading-[1.6] text-gray-2">ติดต่อทีมงาน</p>
+            <p className="fl-12 leading-[1.6] text-gray-2">ติดต่อทีมงาน</p>
             <div className="flex w-full items-center gap-[8px]">
               {SOCIALS.map((social) => (
                 <a
@@ -174,10 +174,8 @@ export default function StatusPanel({
       <div className="flex w-full flex-col items-start rounded-[20px] bg-white p-4 shadow-soft">
         <div className="flex w-full flex-col items-start gap-4">
           <div className="flex w-full flex-col items-start">
-            <p className="w-full text-[20px] leading-[1.4] font-medium">สถานะ</p>
-            <p className="text-[14px] leading-normal text-gray-2">
-              อัปเดตล่าสุดเมื่อ {TEAM.updatedAt}
-            </p>
+            <p className="w-full fl-20 leading-[1.4] font-medium">สถานะ</p>
+            <p className="fl-14 leading-normal text-gray-2">อัปเดตล่าสุดเมื่อ {TEAM.updatedAt}</p>
           </div>
 
           {STATUS_STEPS[status].map((step) => (
@@ -190,8 +188,8 @@ export default function StatusPanel({
         <div className="flex w-full flex-col items-start rounded-[20px] bg-white p-4 shadow-soft">
           <div className="flex w-full flex-col items-start gap-4">
             <div className="flex w-full flex-col items-start">
-              <p className="w-full text-[20px] leading-[1.4] font-medium">{DISCORD_CARD.title}</p>
-              <p className="text-[14px] leading-normal text-gray-2">{DISCORD_CARD.subtitle}</p>
+              <p className="w-full fl-20 leading-[1.4] font-medium">{DISCORD_CARD.title}</p>
+              <p className="fl-14 leading-normal text-gray-2">{DISCORD_CARD.subtitle}</p>
             </div>
 
             <div className="flex w-full items-center gap-[12px] rounded-[12px] p-[10px] shadow-[inset_0_0_0_0.5px_#dcdcdc]">
@@ -200,12 +198,12 @@ export default function StatusPanel({
                   <DiscordGlyph size={20} src={ICON.discord} />
                 </span>
               </span>
-              <p className="min-w-0 flex-1 text-[14px] leading-normal font-medium">
+              <p className="min-w-0 flex-1 fl-14 leading-normal font-medium">
                 {DISCORD_CARD.label}
               </p>
               <button
                 type="button"
-                className="mm-press shrink-0 rounded-[10px] bg-[#f6f6f6] px-[20px] py-[8px] text-[14px] leading-normal transition-colors hover:bg-[#ececec]"
+                className="mm-press shrink-0 rounded-[10px] bg-[#f6f6f6] px-[20px] py-[8px] fl-14 leading-normal transition-colors hover:bg-[#ececec]"
               >
                 {DISCORD_CARD.action}
               </button>

@@ -257,6 +257,14 @@ const PROPS: DecorNode[] = [
  * drawn at random: a re-render — or a future server render — has to produce the same
  * flight, and a random one would re-roll it. The offsets are intentionally large: a tube
  * that starts 500px out has time to read as *travelling* rather than as popping in.
+ *
+ * Once a tube has landed it does not stop: it drifts on a slow closed orbit around the
+ * Figma coordinate, forever. The orbit is a handful of pixels wide and a couple of degrees
+ * — small enough that the composition still reads as the design at any instant, which is
+ * the constraint the arrangement itself imposes — and the idle only starts once *that*
+ * piece's arrival has finished, hence `--pasta-idle-delay` being the sum of the two.
+ * Nothing needs a phase offset: the arrival stagger already starts every orbit at a
+ * different moment, and the per-piece periods are coprime enough not to re-converge.
  */
 type FlowProps = { className: string; vars: CSSProperties }
 
@@ -265,6 +273,11 @@ const PILE_X = 1150
 
 function flowVars(i: number, x: number): CSSProperties {
   const out = x >= PILE_X ? 1 : -1
+  // neighbours orbit opposite ways, so the band breathes rather than drifting as one body
+  const spin = i % 2 ? 1 : -1
+  const delay = i * 95
+  const duration = 1800 + ((i * 137) % 5) * 180
+
   return {
     '--pasta-dx': `${-(440 + ((i * 89) % 7) * 55)}px`,
     '--pasta-dy': `${(((i * 53) % 9) - 4) * 16}px`,
@@ -272,8 +285,13 @@ function flowVars(i: number, x: number): CSSProperties {
     '--pasta-scale': `${(0.86 + ((i * 31) % 6) * 0.03).toFixed(3)}`,
     '--pasta-px': `${out * (7 + ((i * 17) % 3) * 6)}px`,
     '--pasta-py': `${(((i * 41) % 5) - 2) * 6}px`,
-    '--pasta-delay': `${i * 55}ms`,
-    '--pasta-duration': `${900 + ((i * 137) % 5) * 90}ms`,
+    '--pasta-delay': `${delay}ms`,
+    '--pasta-duration': `${duration}ms`,
+    '--pasta-idle-delay': `${delay + duration}ms`,
+    '--pasta-idle-duration': `${17000 + ((i * 61) % 9) * 1900}ms`,
+    '--pasta-idle-x': `${spin * (5 + ((i * 43) % 5) * 1.8)}px`,
+    '--pasta-idle-y': `${3 + ((i * 29) % 4) * 1.6}px`,
+    '--pasta-idle-r': `${spin * (1.1 + ((i * 23) % 4) * 0.5)}deg`,
   } as CSSProperties
 }
 
@@ -323,44 +341,54 @@ export default function HomeBackground() {
   const { band, flowClass } = useFlowPhase()
 
   return (
+    /*
+     * Two boxes, because the canvas is doing two jobs that used to fight. The outer one is
+     * the CLIP and is viewport-wide: the washes and the red band are drawn thousands of px
+     * across on purpose, and cutting them at 1440 is what put a white gutter down both
+     * sides of a 1600 or 1920 display. The inner one is the COORDINATE SPACE and stays a
+     * centred 1440, because every prop in here is pinned at its Figma page x/y and a wider
+     * space would walk all of them away from the content they belong to.
+     */
     <div
       aria-hidden
-      className="pointer-events-none absolute top-0 left-1/2 -z-10 h-[5178px] w-[1440px] -translate-x-1/2 overflow-hidden"
+      className="pointer-events-none absolute top-0 left-1/2 -z-10 h-[5178px] w-screen -translate-x-1/2 overflow-hidden"
     >
-      {/*
-       * Figma has no spec below the 1440 canvas, so narrower viewports get a policy
-       * instead: the photographic props hide below `lg`, where a 1440-scale prop would
-       * dwarf the reflowed content (the prizes section's flat bg-brand-red stands in for
-       * the hidden red blob there); the washes, already thousands of px across, stay at
-       * every width since a centred slice of a soft gradient still reads as the same tint.
-       * Three groups rather than two because the frame paints Home Buttom *under* the
-       * washes but every other prop *over* them.
-       */}
-      <div className="hidden lg:block">
-        {HOME_BOTTOM.map((n, i) => (
-          <Node key={i} n={n} />
-        ))}
-      </div>
-      <div>
-        {WASH.map((n, i) => (
-          <Node key={i} n={n} />
-        ))}
-      </div>
-      <div className="hidden lg:block">
-        {/* The rigatoni band's own sentinel — the tubes themselves are spread over 700px
+      <div className="absolute top-0 left-1/2 h-full w-[1440px] -translate-x-1/2">
+        {/*
+         * Figma has no spec below the 1440 canvas, so narrower viewports get a policy
+         * instead: the photographic props hide below `lg`, where a 1440-scale prop would
+         * dwarf the reflowed content (the prizes section's flat bg-brand-red stands in for
+         * the hidden red blob there); the washes, already thousands of px across, stay at
+         * every width since a centred slice of a soft gradient still reads as the same tint.
+         * Three groups rather than two because the frame paints Home Buttom *under* the
+         * washes but every other prop *over* them.
+         */}
+        <div className="hidden lg:block">
+          {HOME_BOTTOM.map((n, i) => (
+            <Node key={i} n={n} />
+          ))}
+        </div>
+        <div>
+          {WASH.map((n, i) => (
+            <Node key={i} n={n} />
+          ))}
+        </div>
+        <div className="hidden lg:block">
+          {/* The rigatoni band's own sentinel — the tubes themselves are spread over 700px
             of page and half of them start off-canvas, so they are the wrong thing to
             observe. This is the box Figma's rows occupy, y 707 to 1470. */}
-        <div ref={band} className="absolute top-[707px] h-[763px] w-full" />
-        {PROPS.map((n, i) => {
-          const vars = FLOW.get(n)
-          return (
-            <Node
-              key={i}
-              n={n}
-              flow={vars && flowClass ? { className: flowClass, vars } : undefined}
-            />
-          )
-        })}
+          <div ref={band} className="absolute top-[707px] h-[763px] w-full" />
+          {PROPS.map((n, i) => {
+            const vars = FLOW.get(n)
+            return (
+              <Node
+                key={i}
+                n={n}
+                flow={vars && flowClass ? { className: flowClass, vars } : undefined}
+              />
+            )
+          })}
+        </div>
       </div>
     </div>
   )
@@ -458,6 +486,12 @@ function MobileBand({
   return (
     <div aria-hidden className={`pointer-events-none absolute -z-10 ${className}`}>
       {pieces.map((p, i) => (
+        /*
+         * Two boxes, exactly as the 1440 canvas has: the flight animates the outer one and
+         * the piece's own turn stays on the inner. One box for both would mean the flow's
+         * keyframes and `rotate(p.rot)` writing the same `transform`, and the animation
+         * would win — which, now that it never ends, would flatten every piece to 0deg.
+         */
         <div
           key={i}
           className={`absolute ${flowClass ?? ''}`}
@@ -466,13 +500,15 @@ function MobileBand({
             top: `${p.t}%`,
             width: `${p.w * scale}%`,
             aspectRatio: p.ratio,
-            transform: `rotate(${p.rot}deg)`,
             // `l` maps the piece onto the 1440 canvas's x axis, so the nudge direction and
             // the stagger come from the same function the desktop band uses.
             ...(flowClass ? flowVars(i, p.l * 14.4) : {}),
           }}
         >
-          <div className="relative size-full overflow-hidden">
+          <div
+            className="relative size-full overflow-hidden"
+            style={{ transform: `rotate(${p.rot}deg)` }}
+          >
             <img
               src={p.src}
               alt=""

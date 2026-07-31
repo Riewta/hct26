@@ -25,7 +25,13 @@ export default function AuthPageShell({
       <ColourBlockBackdrop muted={muted} />
 
       <div className="relative mx-auto flex w-full max-w-[900px] flex-1 flex-col px-4 pt-8 lg:px-0 lg:pt-15">
-        <div className="flex items-center justify-between gap-4">
+        {/*
+         * `auth-topbar` is shared with every wizard step: the "หน้าหลัก" link and the
+         * account chip are the same two controls in the same corner all the way through
+         * the flow, so they are one object the browser carries rather than two that
+         * crossfade (styles/auth-motion.css).
+         */}
+        <div className="auth-topbar flex items-center justify-between gap-4">
           <Link
             to="/"
             className="flex flex-1 items-center gap-3 text-xl leading-[1.4] text-white transition-opacity hover:opacity-80"
@@ -67,6 +73,12 @@ export const RESULT_ACTION =
 /**
  * The success/error card: a 302 illustration, a centred message and one full-width
  * action, all centred in the 850-tall card.
+ *
+ * `auth-sheet` is the same white plate the gate and the wizard use, so arriving here is
+ * the plate changing contents rather than a new screen. Inside it the three regions rise
+ * in sequence — a result is the one screen in this flow the user reaches once, which is
+ * exactly where the animation notes allow a moment of delight. `data-auth-entrance` is
+ * unconditional here for the same reason.
  */
 export function ResultCard({
   image,
@@ -82,15 +94,19 @@ export function ResultCard({
   action: ReactNode
 }) {
   return (
-    <div className="mt-8 flex min-h-[850px] flex-1 flex-col items-center justify-center gap-10 rounded-t-[32px] bg-white p-6 shadow-soft lg:mt-[70px] lg:p-10">
+    <div
+      data-auth-entrance
+      className="auth-sheet mt-8 flex min-h-[850px] flex-1 flex-col items-center justify-center gap-10 rounded-t-[32px] bg-white p-6 shadow-soft lg:mt-[70px] lg:p-10"
+    >
       <img
         src={image}
         alt=""
         aria-hidden
-        className="w-[220px] shrink-0 object-cover lg:size-[302px]"
+        data-rise={0}
+        className="auth-rise w-[220px] shrink-0 object-cover lg:size-[302px]"
       />
 
-      <div className="flex w-full flex-col items-center gap-6">
+      <div data-rise={2} className="auth-rise auth-rise-sm flex w-full flex-col items-center gap-6">
         <h1
           className={`text-center text-3xl leading-[1.4] font-semibold lg:text-[40px] ${titleClassName}`}
         >
@@ -105,7 +121,9 @@ export function ResultCard({
         </p>
       </div>
 
-      {action}
+      <div data-rise={4} className="auth-rise auth-rise-sm w-full">
+        {action}
+      </div>
     </div>
   )
 }

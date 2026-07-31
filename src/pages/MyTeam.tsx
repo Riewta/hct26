@@ -61,7 +61,7 @@ function ModalButton({
   return (
     <a
       href={href}
-      className={`mm-press flex w-full items-center justify-center gap-4 rounded-[16px] px-4 py-3 font-display text-[20px] leading-normal font-semibold transition-opacity hover:opacity-90 ${className}`}
+      className={`mm-press flex w-full items-center justify-center gap-4 rounded-[16px] px-4 py-3 font-display fl-20 leading-normal font-semibold transition-opacity hover:opacity-90 ${className}`}
     >
       {icon}
       {children}
@@ -122,13 +122,13 @@ export default function MyTeam() {
       <ScrollEdgeEffect className="absolute inset-x-0 top-0 z-10 h-40" />
 
       {/* Figma 708:2307: a 1440 frame padded 100 either side, 60 down, 40 between the rows */}
-      <div className="relative z-20 mx-auto flex w-full max-w-[1440px] flex-col items-center gap-6 px-4 pt-6 pb-16 lg:gap-10 lg:px-25 lg:pt-15">
-        <header className="flex w-full items-center justify-between gap-4 rounded-3xl bg-white p-4 shadow-soft lg:p-5">
+      <div className="shell-dash relative z-20 mx-auto flex w-full max-w-[1440px] flex-col items-center gap-[calc(24px_+_16*var(--fl))] pt-[calc(24px_+_36*var(--fl))] pb-16">
+        <header className="flex w-full items-center justify-between gap-4 rounded-3xl bg-white p-[calc(16px_+_4*var(--fl))] shadow-soft">
           <Link to="/" className="mm-press shrink-0">
             <img
               src={LOGO}
               alt="BangMod Hackathon 2026"
-              className="h-10 w-auto lg:h-[50px] lg:w-[222px]"
+              className="h-[calc(40px_+_10*var(--fl))] w-auto"
             />
           </Link>
           <button
@@ -136,7 +136,7 @@ export default function MyTeam() {
             className="mm-press flex shrink-0 items-center justify-center gap-4 rounded-[12px] border border-[#dcdcdc] py-3 pr-4 pl-5 transition-colors hover:border-brand-red"
           >
             <GoogleLogo className="size-[24px]" />
-            <span className="hidden text-[20px] leading-[1.4] sm:inline">ชื่อบัญชีผู้ใช้</span>
+            <span className="hidden fl-20 leading-[1.4] sm:inline">ชื่อบัญชีผู้ใช้</span>
             <img src={CHEVRON} alt="" aria-hidden className="size-[24px]" />
           </button>
         </header>
@@ -147,8 +147,8 @@ export default function MyTeam() {
             <div className="flex w-full items-start gap-4">
               <div className="aspect-square shrink-0 self-stretch rounded-2xl bg-[#ebebeb]" />
               <div className="flex min-w-0 flex-1 flex-col items-start gap-4">
-                <h1 className="text-[24px] leading-[1.4] font-medium">{TEAM.name}</h1>
-                <p className="flex items-center gap-[12px] text-[18px] leading-[1.4]">
+                <h1 className="fl-24 leading-[1.4] font-medium">{TEAM.name}</h1>
+                <p className="flex items-center gap-[12px] fl-18 leading-[1.4]">
                   <span className="text-gray-2">รหัสทีม</span>
                   <span>{TEAM.code}</span>
                   <button
@@ -165,7 +165,7 @@ export default function MyTeam() {
                     <Tick className="mm-swap-on size-[20px] text-brand-green" />
                   </button>
                 </p>
-                <p className="flex flex-wrap items-start gap-[12px] text-[18px] leading-[1.4]">
+                <p className="flex flex-wrap items-start gap-[12px] fl-18 leading-[1.4]">
                   <span className="text-gray-2">สถานศึกษา</span>
                   <span>{TEAM.school}</span>
                 </p>
@@ -186,7 +186,7 @@ export default function MyTeam() {
                     role="tab"
                     aria-selected={on}
                     onClick={() => setActive(i)}
-                    className={`mm-press flex shrink-0 items-start gap-2 px-3 py-2 text-[18px] leading-normal transition-colors ${
+                    className={`mm-press flex shrink-0 items-start gap-2 px-3 py-2 fl-18 leading-normal transition-colors ${
                       on ? 'font-semibold' : 'rounded-2xl bg-white text-gray-2'
                     }`}
                   >

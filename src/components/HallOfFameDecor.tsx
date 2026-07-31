@@ -343,12 +343,9 @@ const YELLOW_WAVE: Piece = {
  */
 export function HallOfFameWaveBand() {
   return (
-    <div
-      aria-hidden
-      className="pointer-events-none relative h-[408px] overflow-hidden md:h-[634px] lg:h-[906px]"
-    >
+    <div aria-hidden className="hof-band pointer-events-none relative overflow-hidden">
       <div className="absolute top-0 left-1/2 -translate-x-1/2">
-        <div className="h-[906px] w-[1440px] origin-top scale-[0.45] md:scale-[0.7] lg:scale-100">
+        <div className="hof-stage h-[906px] w-[1440px] origin-top">
           <div className="relative size-full">
             <Layer p={RED_WAVE} />
             <Layer p={YELLOW_WAVE} />

@@ -2,9 +2,12 @@
    lives in micro-motion.css, auth-flow motion in auth-motion.css.
 
    What it does: the twenty rigatoni tubes scattered under the hero drift in from the left,
-   gather into the pile on the right, then give each other a small outward nudge as they
-   meet and settle. Everything is one transform per piece, so the whole band is a single
-   composited layer per tube and nothing in the section below it reflows.
+   gather into the pile on the right, give each other a small outward nudge as they meet
+   and settle — and then never quite stop, each one turning a slow closed orbit a few
+   pixels wide around the spot it landed on. Everything is one transform per piece, so the
+   whole band is a single composited layer per tube and nothing in the section below it
+   reflows. (This file also holds sign-in's pan turn, at the bottom, which is the same kind
+   of thing and has nowhere better to live.)
 
    Why it is shaped this way:
 
@@ -61,8 +64,47 @@
   will-change: transform;
 }
 
+/* The idle: a closed orbit around the resting pose, running for as long as the page is
+   open. Both ends are the rest pose, so it can be looped and it can be stopped at any
+   time without leaving a piece somewhere the design never puts it.
+
+   It is an ellipse traced through four stops — right/up, up, left/up, back — with a
+   sine-like ease on every quarter rather than `linear`, because four linear segments
+   read as a diamond. The rotation swings the other way at the halfway mark, so a tube
+   rocks as it drifts instead of sliding rigidly. Amplitudes come from HomeBackground and
+   are single-digit pixels: at any frame the band is still the Figma arrangement. */
+@keyframes pasta-idle {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+
+  25% {
+    transform: translate3d(var(--pasta-idle-x), calc(var(--pasta-idle-y) * -1), 0)
+      rotate(var(--pasta-idle-r));
+  }
+
+  50% {
+    transform: translate3d(0, calc(var(--pasta-idle-y) * -2), 0) rotate(0deg);
+  }
+
+  75% {
+    transform: translate3d(calc(var(--pasta-idle-x) * -1), calc(var(--pasta-idle-y) * -1), 0)
+      rotate(calc(var(--pasta-idle-r) * -1));
+  }
+}
+
+/* Two animations on one property: the arrival is `both`, so it would hold the piece for
+   ever, but a later animation in the list wins over an earlier one *while it is running*,
+   and the idle's delay is exactly when the arrival ends. So the arrival owns the transform
+   until it finishes and the idle owns it from then on, with no gap and no third element to
+   nest. `will-change` is deliberately not set: this runs for the life of the page, and
+   twenty permanently promoted layers is a worse trade here than on a 2s entrance. */
 .pasta-flow {
-  animation: pasta-flow var(--pasta-duration) cubic-bezier(0.33, 1, 0.68, 1) var(--pasta-delay) both;
+  animation:
+    pasta-flow var(--pasta-duration) cubic-bezier(0.33, 1, 0.68, 1) var(--pasta-delay) both,
+    pasta-idle var(--pasta-idle-duration) cubic-bezier(0.37, 0, 0.63, 1) var(--pasta-idle-delay)
+      infinite;
 }
 
 /* The animation is only ever armed from JS, which does not arm it under reduced motion —
@@ -74,6 +116,41 @@
     animation: none;
     transform: none;
     opacity: 1;
+    will-change: auto;
+  }
+}
+
+/* ------------------------------------------------------------------ the pan ----
+
+   Sign-in's pan, turning the way the shaker ring beside it does — same 96s, same linear
+   curve, so the two decorations read as one clock rather than two.
+
+   The one thing it cannot borrow is the ring's `transform-origin: 50% 50%`. The ring's
+   eight shakers average out to the centre of their box; the pan is a single drawing of a
+   bowl with a handle running off to the top right, and its bowl — the thing that has to
+   look like it is spinning in place — is centred at (325, 275) of the 654x465 art, i.e.
+   49.7% / 59.1%. Turning about the box centre instead would swing the whole pan around a
+   point 50px below the bowl and read as an orbit.
+
+   The class belongs on an inner element, not on the same one as `auth-rise`: the entrance
+   animates `transform` too, and the two would fight — the same split the ring already
+   makes. See components/AuthBackdrop.tsx. */
+@keyframes pan-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.auth-pan-turn {
+  transform-origin: 49.7% 59.1%;
+  animation: pan-turn 96s linear infinite;
+  /* one large PNG under one transform — promote the layer once, not per frame */
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-pan-turn {
+    animation: none;
     will-change: auto;
   }
 }
