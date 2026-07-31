@@ -68,7 +68,7 @@ const [ENTRANT_DOCS, ADVISOR_DOCS] = DOCUMENT_GROUPS
 function DocGroup({ heading, items }: (typeof DOCUMENT_GROUPS)[number]) {
   return (
     <div className="flex flex-col gap-4">
-      <h4 className="fl-body-lg text-center leading-[1.5] font-medium">{heading}</h4>
+      <h4 className="fl-title-sm text-center leading-[1.5] font-medium">{heading}</h4>
       <ul className="fl-body ms-[30px] flex list-disc flex-col leading-[1.5] font-light">
         {items.map((item) => (
           <li key={item}>{item}</li>

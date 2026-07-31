@@ -44,21 +44,28 @@ export default function Prizes() {
          * and centring the whole 1400 track in the frame instead (20 either side) is the
          * reading that loses no content; shrinking to 270 would reflow every description.
          */}
+        {/*
+         * Two-up from the smallest width rather than from `sm`. Figma's prize plate is a
+         * 320px square and the artwork for it does not exist yet, so at one column on a
+         * phone each prize was a 358x358 sheet of blank white above two short lines — four
+         * of them in a row, close to two full screens of nothing. Paired, the four read as
+         * the 2x2 award grid they are and the section is one screen again.
+         */}
         <div
           ref={grid.ref}
-          className={`grid gap-10 sm:grid-cols-2 lg:-mx-[100px] lg:flex lg:w-[1400px] lg:max-w-none lg:items-start ${grid.cls}`}
+          className={`grid grid-cols-2 gap-x-[calc(16px_+_24*var(--fl))] gap-y-[calc(28px_+_12*var(--fl))] lg:-mx-[100px] lg:flex lg:w-[1400px] lg:max-w-none lg:items-start ${grid.cls}`}
         >
           {PRIZES.map((prize, i) => (
             <article
               key={prize.title}
-              className="flex flex-col gap-6 lg:w-[320px] lg:shrink-0 lg:gap-10"
+              className="flex min-w-0 flex-col gap-[calc(12px_+_12*var(--fl))] lg:w-[320px] lg:shrink-0 lg:gap-10"
             >
               <div className="aspect-square rounded-xl bg-white" />
               <div
                 className={`flex flex-col gap-4 text-white ${CENTRED.includes(i) ? 'lg:items-center' : ''}`}
               >
                 <h3 className="fl-title leading-[1.4] font-medium">{prize.title}</h3>
-                <p className="fl-copy w-full leading-[1.5] font-light">{prize.body}</p>
+                <p className="fl-lead w-full leading-[1.5] font-light">{prize.body}</p>
               </div>
             </article>
           ))}

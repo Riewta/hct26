@@ -1,31 +1,36 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import AuthBackdrop from '../components/AuthBackdrop'
 import GoogleLogo from '../components/GoogleLogo'
-import { markAuthNav, supportsViewTransitions } from '../components/form/wizardNav'
+import { useAuthNavigate } from '../components/form/wizardNav'
+
+/**
+ * Set once the collage has assembled, and deliberately module scope rather than state: it
+ * has to outlive this component, because the whole question is whether a *later* mount
+ * should animate.
+ */
+let entrancePlayed = false
 
 /**
  * Whether this mount should play the arrival entrance.
  *
- * Sign-in is reachable two ways, and only one of them wants it. A visitor who lands on
- * /signin sees the collage assemble; a visitor who comes back from the registration gate
- * arrives inside a view transition that has just animated those exact colour blocks, and
- * replaying the entrance on top of it would animate everything twice.
+ * Sign-in is reachable more than one way and only the first wants it. A visitor who lands
+ * on /signin sees the collage assemble; a visitor who comes back to it — browser back out
+ * of the registration gate, or back from the homepage — is returning to a screen they have
+ * already watched arrive, and replaying it would undo the morph that just carried those
+ * exact colour blocks home.
  *
- * `:active-view-transition` matches on the root element for as long as a transition is
- * running, and react-router flushes the new route's render synchronously inside
- * `startViewTransition`'s update callback — so reading it while this component first
- * renders answers exactly the right question, without reaching into router internals.
- * The `CSS.supports` guard is not optional: `matches()` throws on a selector the engine
- * does not know, and an engine that lacks the pseudo-class has no morph to double up
- * with anyway.
+ * A module flag rather than `:active-view-transition`, which is what this used to read.
+ * That test only answers "am I inside a transition right now", so it could not see a
+ * plain back navigation, and it silently answered "play" for the entire time no transition
+ * was being started at all. Once per document load is the honest rule, and a genuine
+ * reload gets the entrance back.
  */
 function useArrivalEntrance() {
-  const [play] = useState(() => {
-    if (typeof document === 'undefined') return true
-    if (!CSS.supports('selector(:active-view-transition)')) return true
-    return !document.documentElement.matches(':active-view-transition')
-  })
+  const [play] = useState(() => !entrancePlayed)
+  useEffect(() => {
+    entrancePlayed = true
+  }, [])
   return play
 }
 
@@ -36,7 +41,7 @@ function useArrivalEntrance() {
  * headings and the button label spell it out.
  */
 export default function SignIn() {
-  const navigate = useNavigate()
+  const go = useAuthNavigate()
   const entrance = useArrivalEntrance()
 
   return (
@@ -85,21 +90,20 @@ export default function SignIn() {
             {/*
              * Figma sets this one label in Sukhumvit Set, not Noto — hence font-display.
              *
-             * The navigation is the trigger for the whole auth morph: `viewTransition`
-             * hands react-router the go-ahead to wrap it in `document.startViewTransition`,
-             * and the `auth-block-*` names shared by AuthBackdrop and ColourBlockBackdrop
-             * are what turn the sign-in panel's colour blocks into the registration page's.
-             * Passing the detected flag rather than a bare `true` keeps the fallback
-             * explicit: without support this is an ordinary route change. `markAuthNav`
-             * tells the stylesheet which hop this is, so the colour blocks morph and the
-             * requirements card rises rather than crossfading.
+             * This press is the trigger for the whole auth morph. `runAuthTransition` wraps
+             * the navigation in `document.startViewTransition`, and the `auth-block-*` names
+             * shared by AuthBackdrop and ColourBlockBackdrop are what carry the three colour
+             * blocks out of this 694-wide panel and across the whole registration page — the
+             * same shapes at twice the size, so the browser has a pure scale and travel to
+             * interpolate. The `gate` flag picks that hop's choreography in auth-motion.css:
+             * the food dissolves, the blocks fly, the requirements sheet springs up over them.
+             *
+             * It stays a `<button>` and not a link because signing in is not a destination,
+             * so it takes the imperative `useAuthNavigate` rather than link props.
              */}
             <button
               type="button"
-              onClick={() => {
-                markAuthNav('gate')
-                navigate('/register', { viewTransition: supportsViewTransitions })
-              }}
+              onClick={() => go('/register', 'gate')}
               data-rise={3}
               className="auth-rise auth-rise-sm flex h-15 w-full items-center justify-center gap-5 rounded-[20px] bg-[#f6f6f6] px-6 py-4 font-display text-lg leading-[normal] font-semibold transition-[background-color,transform] duration-[160ms] ease-out hover:bg-[#ececec] active:scale-[0.98] motion-reduce:active:scale-100 lg:text-xl"
             >

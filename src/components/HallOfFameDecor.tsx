@@ -213,10 +213,22 @@ export function HallOfFameHeroDecor() {
        * the right edge — anchoring by that overhang keeps the ring in place at any width.
        */}
       <div className="absolute top-[48px] right-[-314px] hidden h-[1115px] w-[1754px] lg:block">
+        {/*
+         * The plate stays put. It is a single soft #BCBCBC blob, not a ring, and its own
+         * centre (1379.5, 393) is 50px off the ring's — turning it would swing the plate
+         * around a point outside itself and read as the table moving, not the pans.
+         */}
         <Layer p={PAN_PLATE} />
-        {PANS.map((p, i) => (
-          <Layer key={i} p={p} />
-        ))}
+        {/*
+         * The nine pans turn as one group, like sign-in's shaker ring: same 96s, same
+         * linear curve. The origin is the ring's own centre, not the frame's — see
+         * styles/pasta-motion.css.
+         */}
+        <div className="hof-pan-ring absolute inset-0">
+          {PANS.map((p, i) => (
+            <Layer key={i} p={p} />
+          ))}
+        </div>
       </div>
     </div>
   )

@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom'
 import AuthPageShell, { RESULT_ACTION, ResultCard } from '../../components/AuthPageShell'
-import { markAuthNav, supportsViewTransitions } from '../../components/form/wizardNav'
+import { useAuthLink } from '../../components/form/wizardNav'
 
 /** Figma 708:2260 — the failure state desaturates the page's colour blocks to grey. */
 export default function ErrorStep() {
+  const authLink = useAuthLink()
+
   return (
     <AuthPageShell muted>
       <ResultCard
@@ -14,12 +16,7 @@ export default function ErrorStep() {
         action={
           /* going back into the wizard is a `back` hop: the plate carries the user in and
              the terms step slides in from the left, the mirror of how they left it. */
-          <Link
-            to="/register/terms"
-            viewTransition={supportsViewTransitions}
-            onClick={() => markAuthNav('back')}
-            className={RESULT_ACTION}
-          >
+          <Link {...authLink('/register/terms', 'back')} className={RESULT_ACTION}>
             ลองอีกครั้ง
           </Link>
         }

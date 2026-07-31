@@ -96,7 +96,7 @@ export default function FaqSection() {
                    * survive the collapse and leave a hole under a closed question.
                    */}
                   <dd className={`mm-collapse ${open ? 'is-open' : ''}`}>
-                    <div className="fl-copy pt-4 leading-[1.5]">{faq.a}</div>
+                    <div className="fl-body pt-4 leading-[1.5]">{faq.a}</div>
                   </dd>
                 </div>
               </div>

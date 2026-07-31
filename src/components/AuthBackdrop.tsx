@@ -64,16 +64,23 @@ type PieceProps = Box & {
   flipY?: boolean
   /** Position in the sign-in entrance stagger; omitted where there is no entrance. */
   rise?: number
+  /**
+   * An `auth-food-*` class, which carries a view-transition name from auth-motion.css. The
+   * gate has no food to pair these with, so the name is not there to morph anything — it
+   * lifts the piece out of the page-level cross-fade so the collage can come apart on its
+   * own timing instead of blinking out with the sign-in copy.
+   */
+  className?: string
 }
 
-function Piece({ src, w, h, rotate, flipY, rise, ...box }: PieceProps) {
+function Piece({ src, w, h, rotate, flipY, rise, className = '', ...box }: PieceProps) {
   return (
     /*
      * The entrance rides the outer box, which carries no transform of its own — the
      * rotation lives on the child. Two transforms on one element would fight.
      */
     <div
-      className={`absolute flex items-center justify-center ${rise === undefined ? '' : 'auth-rise'}`}
+      className={`absolute flex items-center justify-center ${rise === undefined ? '' : 'auth-rise'} ${className}`}
       data-rise={rise}
       style={box}
     >
@@ -359,7 +366,7 @@ export default function AuthBackdrop() {
 
       {SIGN_IN_EGGS.map((egg, i) => (
         <Plane key={i} depth={12 + i * 2}>
-          <Piece src={EGG} rise={4 + i} {...egg} />
+          <Piece src={EGG} rise={4 + i} className={`auth-food-egg-${i + 1}`} {...egg} />
         </Plane>
       ))}
 
@@ -380,7 +387,7 @@ export default function AuthBackdrop() {
       <Plane depth={20}>
         {/* the entrance and the 96s turn need one element each, as the shaker ring does */}
         <div
-          className="auth-rise absolute"
+          className="auth-food-pan auth-rise absolute"
           data-rise={3}
           style={{ left: -125, top: -59, width: 654, height: 465 }}
         >
@@ -390,7 +397,7 @@ export default function AuthBackdrop() {
 
       <Plane depth={10}>
         {/* the entrance and the 96s turn need one element each — see auth-motion.css */}
-        <div className="auth-rise absolute" data-rise={7} style={SHAKER_RING}>
+        <div className="auth-food-ring auth-rise absolute" data-rise={7} style={SHAKER_RING}>
           <div className="auth-pepper-ring absolute inset-0">
             {SIGN_IN_SHAKERS.map((item, i) => (
               <Piece key={i} {...item} />

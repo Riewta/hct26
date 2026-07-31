@@ -46,11 +46,13 @@ export default function ContactSection() {
   const map = useReveal()
 
   return (
-    <section
-      id="contact"
-      className="relative px-4 py-20 lg:px-[120px] lg:pt-[203.5px] lg:pb-[375.5px]"
-    >
-      <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col gap-10 overflow-hidden rounded-3xl">
+    <section id="contact" className="shell relative py-20 lg:pt-[203.5px] lg:pb-[375.5px]">
+      {/*
+       * No `overflow-hidden rounded-3xl` here. It was clipping the section eyebrow, whose line
+       * box starts flush with this wrapper's top edge, and it was never needed: the only round
+       * corners in the section are the map's, and the map carries its own clip.
+       */}
+      <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col gap-10">
         <div ref={head.ref} className={head.cls}>
           <SectionHeader number="04" title={CONTACT.title} description={CONTACT.description} />
         </div>
@@ -63,7 +65,7 @@ export default function ContactSection() {
               className="mm-press flex items-center gap-4 transition-opacity hover:opacity-80"
             >
               {/* Figma pads each glyph inside an 80 box, so the label always lands at 96 */}
-              <span className="mm-icon-pop flex size-16 shrink-0 items-center justify-center rounded-xl lg:size-20">
+              <span className="mm-icon-pop flex size-[calc(48px_+_32*var(--fl))] shrink-0 items-center justify-center rounded-xl">
                 <span
                   className="relative block shrink-0"
                   style={{ width: channel.size, height: channel.size }}
@@ -80,9 +82,7 @@ export default function ContactSection() {
                   ))}
                 </span>
               </span>
-              <span className="text-2xl leading-[1.4] font-medium lg:text-3xl">
-                {channel.label}
-              </span>
+              <span className="fl-title leading-[1.4] font-medium">{channel.label}</span>
             </a>
           ))}
         </div>
@@ -100,10 +100,14 @@ export default function ContactSection() {
               className="absolute top-[-30.29%] left-[-14.86%] h-[168.63%] w-[129.72%] max-w-none"
             />
             {/*
-             * The band stays Figma's 344, but both ramps finish well before the top of it.
-             * Run to full height they fog the entire lower half of the map, which is the one
-             * thing this overlay is not meant to do — the address needs a backing, the
-             * photograph underneath it does not need covering.
+             * The band is a fraction of the map, not Figma's flat 344: `57.33%` IS 344 on the
+             * 600-tall lg map, and on the 300-tall phone map it is 172 rather than 344 — which
+             * as a literal 344 overhung the photograph by 44px, putting the solid end of the
+             * ramp *below* the image and fogging the whole thing instead of capping it.
+             * Below lg the address is not over the map at all, so there the band only has to
+             * hand the photo over to the ink plate underneath it, and 40% does that.
+             * Both ramps still finish well before the top of the band: run full height they
+             * cover the artwork, which is the one thing this overlay is not meant to do.
              */}
             <ScrollEdgeEffect
               tone="dark"
@@ -111,14 +115,15 @@ export default function ContactSection() {
               maskAlpha={0.9}
               tintReach={0.45}
               blurReach={0.6}
-              className="absolute inset-x-0 bottom-0 h-[344px] rounded-b-3xl"
+              className="absolute inset-x-0 bottom-0 h-[40%] rounded-b-3xl lg:h-[57.33%]"
             />
           </div>
 
           <div className="flex items-center gap-4 bg-ink/90 p-6 text-white lg:absolute lg:inset-x-0 lg:-bottom-[0.5px] lg:bg-transparent lg:p-10">
             {/* Figma pads the pin to 56 inside an 80 box, then insets the vector again */}
-            <span className="flex size-16 shrink-0 items-center justify-center rounded-xl lg:size-20">
-              <span className="relative block size-14">
+            <span className="flex size-[calc(48px_+_32*var(--fl))] shrink-0 items-center justify-center rounded-xl">
+              {/* 56 in an 80 box is 70%, so the pin keeps its padding as the box scales down */}
+              <span className="relative block size-[70%]">
                 <img
                   src={`${A}1729b3bffbd91e5facf50704cb0d869d52659e47.svg`}
                   alt=""
@@ -128,8 +133,8 @@ export default function ContactSection() {
               </span>
             </span>
             <div className="flex flex-1 flex-col gap-1.5">
-              <p className="text-2xl leading-[1.4] font-medium lg:text-3xl">{CONTACT.place}</p>
-              <p className="text-base leading-[1.5] font-light lg:text-2xl">{CONTACT.address}</p>
+              <p className="fl-title leading-[1.4] font-medium">{CONTACT.place}</p>
+              <p className="fl-lead leading-[1.5] font-light">{CONTACT.address}</p>
             </div>
           </div>
         </div>

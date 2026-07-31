@@ -154,3 +154,37 @@
     will-change: auto;
   }
 }
+
+/* ------------------------------------------------- the hall-of-fame pan ring ----
+
+   The other pan. Hall of fame's hero carries a ring of nine pans, and it turns the same
+   way sign-in's single pan and shaker ring do: one group, 96s, linear, so the three
+   decorations across the site read as one clock.
+
+   As with sign-in's pan, the whole difficulty is the origin, and here the box centre is
+   not even close. Figma's "Pan" frame is 1754x1115 and hangs 314 off the right edge of the
+   1440 canvas; the ring inside it is a ~177 radius circle whose centre is the mean of the
+   nine pans' own centres, (1330.8, 377.2) — 1331 across the 1440 canvas, which is the
+   whole reason the ring half-leaves the page. As a fraction of the frame that is
+   1330.8/1754 = 75.87% across and 377.2/1115 = 33.82% down. Turning about 50% 50% instead
+   would drag the ring 500px left and 190px down through the page on every revolution.
+
+   The nine pans are grouped and the group is turned, rather than each pan being animated:
+   one composited layer, and every pan keeps the angle Figma gave it relative to the ring.
+   The grey plate is left out of the group on purpose — see components/HallOfFameDecor.tsx.
+
+   Reuses `pan-turn` above; there is only one 360deg turn in this file and both rings want
+   exactly it. */
+.hof-pan-ring {
+  transform-origin: 75.87% 33.82%;
+  animation: pan-turn 96s linear infinite;
+  /* nine PNGs under one transform — promote the group once, not nine layers per frame */
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hof-pan-ring {
+    animation: none;
+    will-change: auto;
+  }
+}

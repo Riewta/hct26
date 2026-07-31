@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import AuthPageShell from '../components/AuthPageShell'
-import { markAuthNav, supportsViewTransitions } from '../components/form/wizardNav'
+import { useAuthLink } from '../components/form/wizardNav'
 import { DOCUMENT_GROUPS } from '../data'
 
 /**
@@ -33,6 +33,8 @@ const REQUIREMENTS = [
 
 /** Figma 708:1174 — the gate that lists what to bring before the wizard opens. */
 export default function Register() {
+  const authLink = useAuthLink()
+
   return (
     <AuthPageShell>
       {/*
@@ -75,12 +77,10 @@ export default function Register() {
         </div>
 
         {/* Figma sets this label in Sukhumvit Set, not Noto */}
+        {/* `enter`, not `forward`: this hop sinks the colour blocks away and spills the
+            wizard's pasta in, which no step-to-step move should do. */}
         <Link
-          to="/register/team"
-          viewTransition={supportsViewTransitions}
-          /* `enter`, not `forward`: this hop sinks the colour blocks away and spills the
-             wizard's pasta in, which no step-to-step move should do. */
-          onClick={() => markAuthNav('enter')}
+          {...authLink('/register/team', 'enter')}
           className="flex h-15 w-full items-center justify-center rounded-[20px] bg-brand-red px-6 py-4 font-display text-lg leading-[normal] font-semibold text-white transition-[opacity,transform] duration-[160ms] ease-out hover:opacity-90 active:scale-[0.98] motion-reduce:active:scale-100 lg:text-xl"
         >
           ลงทะเบียน

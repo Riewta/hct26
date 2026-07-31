@@ -40,7 +40,9 @@ export default function PastEvents() {
           </div>
 
           <div ref={intro.ref} className={`flex flex-col gap-6 ${intro.cls}`}>
-            <h1 className="fl-title leading-[1.4] font-medium">{PAST_INTRO.title}</h1>
+            {/* the page's own h1 — it was set a rank BELOW the "หอเกียรติยศ" h2 below it,
+                so the hierarchy read upside down at every width */}
+            <h1 className="fl-display leading-[1.4] font-medium">{PAST_INTRO.title}</h1>
             {PAST_INTRO.paragraphs.map((p) => (
               <p key={p} className="fl-lead leading-[1.5] font-light whitespace-pre-wrap">
                 {p}
@@ -53,7 +55,7 @@ export default function PastEvents() {
       {/* Figma: 40 between the title and each 1200x800 card, then straight into the waves */}
       <section id="timeline" className="shell sec-hall-timeline relative">
         <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col gap-[calc(24px_+_16*var(--fl))]">
-          <h2 ref={title.ref} className={`fl-display leading-[1.4] font-semibold ${title.cls}`}>
+          <h2 ref={title.ref} className={`fl-section leading-[1.4] font-semibold ${title.cls}`}>
             หอเกียรติยศ
           </h2>
           <div

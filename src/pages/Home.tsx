@@ -12,7 +12,16 @@ import Prizes from '../components/Prizes'
  */
 export default function Home() {
   return (
-    <div className="relative isolate">
+    /*
+     * `lg:min-h-[5178px]` is the height of the Figma background frame (935:451). The canvas
+     * is absolutely positioned, so it contributes no height of its own; without a floor here
+     * the content measures ~4690 and the footer climbs to 4937, which leaves the last 241px
+     * of artwork — the cream strands and the cheese, which hang well below the red band —
+     * sitting on the footer's logo row. Pinning the page to the frame's own height fixes it
+     * height-independently, where tuning Prizes' bottom margin would re-break the moment any
+     * section's height moved.
+     */
+    <div className="relative isolate lg:min-h-[5178px]">
       <HomeBackground />
       <Hero />
       <Calendar />

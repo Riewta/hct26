@@ -8,7 +8,14 @@ export default function Navbar() {
 
   return (
     <div className="shell-wide fixed inset-x-0 top-0 z-50 pt-[calc(16px_+_24*var(--fl))]">
-      <ScrollEdgeEffect className="absolute inset-x-0 top-0 h-40" />
+      {/*
+       * Figma's band is 160 tall against a 183-tall nav row on a 1440 frame — a fifth of the
+       * viewport height there. Held at 160 on a 390x844 phone the same band is a *third* of
+       * the screen and the pill only fills its top half, so the remainder sat as a grey wash
+       * over whatever the page put below the nav: at 390 it was mushing the calendar's own
+       * section heading. The band now tracks the nav row it belongs to.
+       */}
+      <ScrollEdgeEffect className="absolute inset-x-0 top-0 h-[calc(92px_+_68*var(--fl))]" />
 
       <nav className="relative mx-auto flex max-w-[1320px] items-center justify-between gap-6 rounded-[100px] bg-white py-4 pr-4 pl-[calc(20px_+_20*var(--fl))] shadow-soft">
         <NavLink to="/" className="mm-press shrink-0">

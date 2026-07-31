@@ -19,7 +19,7 @@ export default function ScopeSection() {
           {/* the pill is centred against the title + intro pair, not against the row's top */}
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:gap-0">
             <div className="flex flex-col gap-[calc(8px_-_4*var(--fl))] lg:flex-1">
-              <h2 className="fl-display leading-[1.4] font-semibold">ขอบเขตเนื้อหา</h2>
+              <h2 className="fl-section leading-[1.4] font-semibold">ขอบเขตเนื้อหา</h2>
               <p className="fl-lead leading-[1.5] font-light">{SCOPE_INTRO}</p>
             </div>
             <a
@@ -35,7 +35,7 @@ export default function ScopeSection() {
                   className="absolute inset-[12.54%_22.35%_14.08%_22.33%] max-w-none"
                 />
               </span>
-              <span className="fl-copy leading-[1.4] font-bold whitespace-nowrap">
+              <span className="fl-body leading-[1.4] font-bold whitespace-nowrap">
                 ดาวน์โหลดฉบับเต็ม (PDF)
               </span>
             </a>
@@ -69,12 +69,12 @@ export default function ScopeSection() {
                   className="absolute inset-0 size-full max-w-none"
                 />
                 <div className="relative flex flex-col gap-1">
-                  <h3 className="fl-title-alt leading-[1.4] font-medium">{card.title}</h3>
+                  <h3 className="fl-title-sm leading-[1.4] font-medium">{card.title}</h3>
                   <p className="fl-body leading-[1.4] font-light">{card.body}</p>
                 </div>
                 <p className="relative flex items-center gap-3">
                   <span className="fl-title leading-[1.4]">{card.count}</span>
-                  <span className="fl-body flex-1 leading-[1.4]">หัวข้อ</span>
+                  <span className="fl-caption flex-1 leading-[1.4]">หัวข้อ</span>
                   <img
                     src="/assets/figma/7a9a840bc86f022af7d9842b56f91f168bd06a03.svg"
                     alt=""

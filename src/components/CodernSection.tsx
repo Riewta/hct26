@@ -47,19 +47,25 @@ export default function CodernSection() {
             alt="หน้าจอแพลตฟอร์ม Codern"
             className="aspect-[1954/1154] w-full rounded-t-[20px] object-cover"
           />
-          {/* the screenshot's bottom 160 fades out under a progressive blur */}
+          {/*
+           * The screenshot's bottom fades out under a progressive blur. Figma's 160 is
+           * against a 709-tall image in the 1200 column — 22.6% of it. As a hard 160px the
+           * band stayed put while the image shrank with the column, so at 390 it covered
+           * 76% of a 211-tall screenshot and the whole thing rendered as a black smear.
+           * The fraction is the invariant, not the pixel count.
+           */}
           <ScrollEdgeEffect
             tone="dark"
             flip
             maskAlpha={0.9}
-            className="absolute inset-x-0 bottom-0 h-[160px]"
+            className="absolute inset-x-0 bottom-0 h-[22.6%]"
           />
         </div>
 
         <div className="flex w-full flex-col gap-5 p-[calc(24px_+_16*var(--fl))]">
           <p className="fl-eyebrow leading-[1.5] font-medium text-brand-yellow">02</p>
           <div className="flex flex-col gap-1">
-            <h2 className="fl-display leading-[1.4] font-semibold">แพลตฟอร์ม Codern</h2>
+            <h2 className="fl-section leading-[1.4] font-semibold">แพลตฟอร์ม Codern</h2>
             {/* one blank 36px line between the paragraphs, as Figma sets them */}
             <div className="fl-lead flex flex-col gap-[calc(24px_+_12*var(--fl))] leading-[1.5] font-light">
               {CODERN_PARAGRAPHS.map((p) => (

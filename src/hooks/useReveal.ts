@@ -67,7 +67,7 @@ export function useReveal<T extends HTMLElement = HTMLDivElement>({
           else if (entry.boundingClientRect.bottom < 0) finish(false)
         }
       },
-      { threshold, rootMargin: '0px 0px -8% 0px' }
+      { threshold, rootMargin: '0px 0px -8% 0px' },
     )
 
     let ticking = false

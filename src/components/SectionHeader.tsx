@@ -20,7 +20,7 @@ export default function SectionHeader({
       {/* the gap closes as the type grows — 8 at 375, the design's 4 at 1440 */}
       <div className="flex flex-col gap-[calc(8px_-_4*var(--fl))]">
         <h2
-          className={`fl-display leading-[1.4] font-semibold ${light ? 'text-white' : 'text-ink'}`}
+          className={`fl-section leading-[1.4] font-semibold ${light ? 'text-white' : 'text-ink'}`}
         >
           {title}
         </h2>

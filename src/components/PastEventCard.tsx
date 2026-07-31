@@ -79,19 +79,22 @@ export default function PastEventCard({ event }: { event: PastEvent }) {
       </div>
 
       <div className="relative flex min-w-0 flex-1 flex-col gap-8 text-white lg:gap-[73px]">
+        {/* These four were the last hard `text-a lg:text-b` pairs on the marketing pages —
+            24/18 below lg and 30/24 above it, i.e. two sizes and a jump at 1024. They are
+            the card-heading and lead ranks of the shared ladder. */}
         <header className="flex flex-col gap-4 lg:gap-6">
-          <h3 className="text-2xl leading-[1.4] font-medium lg:text-3xl">{event.title}</h3>
-          <p className="text-lg leading-[1.5] font-light lg:text-2xl">{event.subtitle}</p>
+          <h3 className="fl-title leading-[1.4] font-medium">{event.title}</h3>
+          <p className="fl-lead leading-[1.5] font-light">{event.subtitle}</p>
         </header>
 
         <dl className="flex flex-col gap-6 lg:gap-8">
           {event.awards.map((award) => (
             <div key={award.label} className="flex flex-col gap-2 lg:gap-4">
-              <dt className="text-2xl leading-[1.4] font-medium lg:text-3xl lg:whitespace-nowrap">
+              <dt className="fl-title leading-[1.4] font-medium lg:whitespace-nowrap">
                 {award.label}
               </dt>
               {award.winners.map((winner) => (
-                <dd key={winner} className="text-lg leading-[1.5] font-light lg:text-2xl">
+                <dd key={winner} className="fl-lead leading-[1.5] font-light">
                   {winner}
                 </dd>
               ))}

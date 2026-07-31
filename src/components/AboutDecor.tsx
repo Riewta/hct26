@@ -23,39 +23,49 @@ const GARLIC_WAVE = `${A}1929430b7343966fe082e8a4e52d59eeeeca1c68.svg`
 const CONTACT_BAND = `${A}7b1205541033ca44bebf6de0974444d5c89fc456.svg`
 const WASH = `${A}31e583ef33f9b578ae1882798097740e00a4a0bf.svg`
 
-/** A node whose image fill is cropped — Figma scales the bitmap past the node box. */
-type Crop = {
-  src: string
+/**
+ * A checked napkin: Pasta 1 (935:897) and Pasta 2 (935:898), the two pieces of cloth at
+ * the top of the page. Both are one bitmap cropped into a *rotated* node, so each one
+ * carries the same two boxes the garlic heaps below do — the axis-aligned `x/y/w/h` the
+ * node occupies in the frame, and the node's own unrotated `iw/ih` centred in it and
+ * turned by `rot`. The crop is stated against the inner box.
+ */
+type Napkin = {
   x: number
   y: number
   w: number
   h: number
-  /** image placement inside the box, as percentages of the box */
-  ix: string
-  iy: string
-  iw: string
-  ih: string
+  iw: number
+  ih: number
+  rot: number
 }
 
 /*
- * Pasta 1 (935:897) and Pasta 2 (935:898) share one bitmap at the same crop; only their
- * boxes differ, which is what turns the same lattice into two different washes.
+ * The crop, as percentages of the *inner* box. These are Figma's own numbers, and they are
+ * right: against the inner box they work out to a uniform scale (Pasta 1: 3700.66/2360 =
+ * 1.5681 across, 2573.19/1640 = 1.5690 down), and they seat the napkin neatly inside it
+ * with a ~58px margin — which is the check that the box is the right one.
  *
- * These four percentages are NOT the ones Figma's own generated CSS reports for the fill
- * (291.47/298.81/-113.3/-90.4): those describe a fill roughly 25% too wide and 75% too
- * tall, which rendered the whole cloth across the page instead of the corner Figma paints.
- * They are solved from the frame's render instead — the bitmap's opaque bounds land at
- * page x 860 (Pasta 1's left edge) and x 447 (Pasta 2's right edge), page y 817..1502
- * (Pasta 2, its only two unclipped edges) — which reproduces Pasta 1's bottom edge to
- * within 6px as a check. Re-derive them the same way if the fill ever moves in Figma.
+ * They were previously read as percentages of the *outer* box with the rotation dropped,
+ * and re-solved by eye when that did not fit; the resulting fill was ~25% off and Pasta 1
+ * came out as a 213px sliver of cloth at the top right instead of the napkin Figma lays in
+ * diagonally from page (868, 8). Ask `get_design_context` for the *parent frame*, not for
+ * the node: for a rotated node the node-level answer states the crop without the
+ * `rotate()` wrapper that makes sense of it, and `get_metadata` reports the turned
+ * corner rather than the box (Pasta 1 reads x = 1226.6 there; its box starts at 683.73).
  */
-const PASTA_FILL = { ix: '-117.72%', iy: '-24.19%', iw: '233.09%', ih: '170.18%' }
+const NAPKIN_FILL = { left: '-113.3%', top: '-90.4%', width: '291.47%', height: '298.81%' }
 
-/* Frame paint order: 1, then 2. (Pasta 3, 935:899, and Pasta 4, 935:1328, both render
-   empty in Figma — 935:899 exports as a 1x1 image — so neither is drawn here.) */
-const CROPS: Crop[] = [
-  { src: PASTA, x: 1226.604, y: -522.67, w: 1528.462, h: 1468.876, ...PASTA_FILL },
-  { src: PASTA, x: -371.576, y: 236.908, w: 1669.054, h: 1669.042, ...PASTA_FILL },
+/*
+ * Frame paint order: 1, then 2.
+ *
+ * Pasta 3 (935:899) is not skipped because it is empty — it holds two farfalle and is
+ * turned 64.34deg — but because its box runs x -690.41..-8.53, entirely off the left edge
+ * of the 1440 frame. Pasta 4 (935:1328) has no fill at all.
+ */
+const NAPKINS: Napkin[] = [
+  { x: 683.73, y: -522.67, w: 1528.462, h: 1468.876, iw: 1269.65, ih: 861.154, rot: 39.08 },
+  { x: -1046.1, y: 236.91, w: 1669.054, h: 1669.042, iw: 1406.45, ih: 953.94, rot: 45 },
 ]
 
 /** A rotated prop: `w/h` is the box Figma reports, `uw/uh` the size before rotation. */
@@ -281,20 +291,29 @@ export function AboutDecor() {
       {/* Frame paint order, bottom-most first: pots, tomatoes, pasta, garlic, wash. */}
       <Props items={POTS} x={1031} y={4581} />
       <Props items={TOMATOES} x={-149.69} y={4515.094} />
-      {CROPS.map((c, i) => (
-        <div
-          key={i}
-          className="absolute overflow-hidden"
-          style={{ left: c.x, top: c.y, width: c.w, height: c.h }}
-        >
-          <img
-            src={c.src}
-            alt=""
-            className="absolute max-w-none"
-            style={{ left: c.ix, top: c.iy, width: c.iw, height: c.ih }}
-          />
-        </div>
-      ))}
+      {/*
+       * The napkins, clipped to the 1440 column rather than to the screen. Everything else
+       * on this canvas is either a soft wash or a prop whose Figma box already ends inside
+       * the page, so it can bleed past 1440 without showing anything Figma does not; the
+       * napkins are hard-edged and 1500px wide, and past 1440 the clip is the only thing
+       * standing between the corner of cloth Figma paints and the whole tablecloth.
+       */}
+      <div className="absolute inset-0 overflow-hidden">
+        {NAPKINS.map((n, i) => (
+          <div
+            key={i}
+            className="absolute flex items-center justify-center"
+            style={{ left: n.x, top: n.y, width: n.w, height: n.h }}
+          >
+            <div
+              className="relative shrink-0 overflow-hidden"
+              style={{ width: n.iw, height: n.ih, transform: `rotate(${n.rot}deg)` }}
+            >
+              <img src={PASTA} alt="" className="absolute max-w-none" style={NAPKIN_FILL} />
+            </div>
+          </div>
+        ))}
+      </div>
       {/*
        * "Vector Shape" (935:1125) — the #FFEAB4 field behind the FAQ, whose curved bottom
        * edge is what the contact section is drawn against and what the garlic heap rides.

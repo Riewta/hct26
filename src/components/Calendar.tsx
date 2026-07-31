@@ -12,16 +12,37 @@ const addToCalendar = '/assets/figma/7aa7415392999a4ea5000911a14f8b9228b4344a.sv
  * image, pushed right in the wide card and pulled far left in the narrow one, so both
  * cards show a different slice of the same bowl.
  */
+/*
+ * `bowl` is the photo's geometry, and it is a two-composition problem.
+ *
+ * At `lg` the row exists, so Figma's slice is reproducible: the 834-wide image is
+ * re-expressed as a percentage of the card it sits in — 834.211/700 for the wide card,
+ * 834.211/476 for the narrow one — with `left` as the same percentage of the card. That
+ * scales the whole bowl with the column and shows the identical slice at any width from
+ * 1024 up, where the hard 834px only showed the correct one at exactly 1440.
+ *
+ * Below `lg` the row collapses to one column and Figma's slice has no meaning: an 834px
+ * plate anchored at x = -551 inside a 350px card put the bowl straight over the
+ * "เพิ่มไปยังปฏิทิน" row, which is why that line was illegible on the yellow card at 390.
+ * There the bowl is a corner garnish instead — two thirds of the card wide, hung off the
+ * bottom-right so only the plate's upper-left arc is inside the card and the CTA in the
+ * opposite corner stays clear of it.
+ */
 const TONE = {
   red: {
     card: 'from-red-grad-from to-red-grad-to',
-    bowl: 'left-[168.51px]',
+    bowl: 'lg:left-[24.073%] lg:w-[119.173%]',
   },
   yellow: {
     card: 'from-yellow-grad-from to-yellow-grad-to',
-    bowl: 'left-[-551.49px]',
+    bowl: 'lg:left-[-115.86%] lg:w-[175.254%]',
   },
 }
+
+/** Shared by both tones: the garnish below lg, then Figma's own top offset from lg up. */
+const BOWL_BOX =
+  'absolute aspect-[834.211/441.197] w-[68%] -right-[14%] -bottom-[18%] ' +
+  'lg:right-auto lg:bottom-auto lg:top-[12.16%]'
 
 export default function Calendar() {
   const head = useReveal()
@@ -43,10 +64,13 @@ export default function Calendar() {
             {TIMELINE_HIGHLIGHTS.map((item) => (
               <article
                 key={item.date}
-                className={`relative flex min-h-[calc(360px_+_140*var(--fl))] min-w-0 flex-col justify-between gap-6 overflow-hidden rounded-3xl bg-gradient-to-b p-[calc(20px_+_4*var(--fl))] text-white ${TONE[item.tone].card}`}
+                /* 500 is the Figma height. The old 360 floor was a desktop card's
+                   proportions on a phone — a big empty middle between two short text
+                   blocks; 208 is the height the phone card's own content asks for. */
+                className={`relative flex min-h-[calc(208px_+_292*var(--fl))] min-w-0 flex-col justify-between gap-6 overflow-hidden rounded-3xl bg-gradient-to-b p-[calc(20px_+_4*var(--fl))] text-white ${TONE[item.tone].card}`}
               >
                 <div
-                  className={`pointer-events-none absolute top-[60.8px] h-[441.197px] w-[834.211px] overflow-hidden ${TONE[item.tone].bowl}`}
+                  className={`pointer-events-none overflow-hidden ${BOWL_BOX} ${TONE[item.tone].bowl}`}
                 >
                   <img
                     src={spaghetti}

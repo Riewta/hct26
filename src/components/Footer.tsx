@@ -3,7 +3,10 @@ import { FOOTER_ABOUT, FOOTER_GROUPS, SOCIAL_LINKS } from '../data'
 
 export default function Footer() {
   return (
-    <footer className="shell-wide rounded-3xl bg-white pt-[calc(40px_+_20*var(--fl))] pb-[calc(64px_+_36*var(--fl))]">
+    /* `relative` so the footer joins the positioned paint step: the page's decoration canvas
+       is `-z-10` but a static footer still paints before any positioned box, so any future
+       overshoot would land on top of this text instead of behind it. */
+    <footer className="relative shell-wide rounded-3xl bg-white pt-[calc(40px_+_20*var(--fl))] pb-[calc(64px_+_36*var(--fl))]">
       <div className="mx-auto flex max-w-[1320px] flex-col gap-8 lg:flex-row lg:justify-between">
         <div className="flex max-w-[600px] flex-col justify-between gap-8">
           <div className="flex flex-col gap-5">

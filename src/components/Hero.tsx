@@ -96,7 +96,14 @@ export default function Hero() {
           </div>
         </div>
 
-        <p className="hero-lead w-full max-w-[954px] font-light">
+        {/*
+         * The margin is `hero-lead`'s (28 → 42), but the size is the shared ladder's `fl-lead`
+         * rather than `hero-lead`'s own 16 → 24: at 1440 a 24px hero paragraph was a step
+         * above the registration screens' 20px body, which is the comparison the type scale
+         * is now held to. Written out here rather than changed in liquid.css, which belongs
+         * to the liquid-button track.
+         */}
+        <p className="fl-lead mt-[calc(28px_+_14*var(--fl))] w-full max-w-[954px] leading-[1.5] font-light">
           {HERO_LINES.map((line) => (
             <span key={line} className="block">
               {line}

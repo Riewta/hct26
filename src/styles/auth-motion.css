@@ -5,16 +5,16 @@
 /*
  * Curves, not durations, are what make these read as intentional. The stock CSS
  * easings are too weak, so these are the stronger variants from Emil Kowalski's
- * design-engineering notes: `--ease-out-auth` for anything entering, `--ease-morph`
- * for something travelling across the screen, and the Ionic drawer curve for the
- * registration sheet, which needs to settle like a spring without overshooting
- * (Apple's default UI spring is critically damped — bounce is reserved for motion
- * the user's own gesture threw).
+ * design-engineering notes: `--ease-out-auth` for anything entering and `--ease-morph`
+ * for something travelling across the screen.
+ *
+ * The registration sheet takes neither. It is the one element here asked to *settle*, and
+ * no cubic-bezier can describe a settle — see `auth-sheet-present`, which is sampled from
+ * a spring instead.
  */
 :root {
   --ease-out-auth: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-morph: cubic-bezier(0.77, 0, 0.175, 1);
-  --ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 /* ---------------------------------------------------- the pepper ring ---- */
@@ -55,12 +55,11 @@
  * read from back to front, which is the order the collage is stacked in Figma 708:1223.
  *
  * It is gated on an attribute (`[data-auth-entrance]`) rather than baked into the
- * classes because the same elements are view-transition participants: arriving at
- * /signin from the registration gate (browser back) has already animated these exact
- * boxes, and replaying the entrance on top of that would double the motion. SignIn
- * decides once, at mount, whether the attribute is present (see pages/SignIn.tsx);
- * with the attribute absent every element simply renders in its final state, so
- * nothing can be left invisible.
+ * classes because sign-in is reachable more than once per visit, and only the first
+ * arrival should assemble: coming back to a screen the user has already watched arrive
+ * reads as a stutter, not a welcome. SignIn decides once, at mount, whether the attribute
+ * is present (see pages/SignIn.tsx); with the attribute absent every element simply
+ * renders in its final state, so nothing can be left invisible.
  *
  * Distance is a variable so the artwork can travel further than the copy: 48px reads
  * as a large object settling, while 14px under a heading is a nudge, not a slide.
@@ -192,10 +191,10 @@
  * "Background / Green" is filled yellow and "Background / Red" green.
  *
  * `@supports` is belt-and-braces — an engine without view transitions ignores both
- * `view-transition-name` and the pseudo-elements anyway, and react-router only opts
- * into the API when `document.startViewTransition` exists, so the navigation simply
- * happens plainly. Nothing here can leave an element stuck or invisible, because
- * every rule below styles pseudo-elements that exist only mid-transition.
+ * `view-transition-name` and the pseudo-elements anyway, and wizardNav only calls
+ * `startViewTransition` when it exists, so the navigation simply happens plainly. Nothing
+ * here can leave an element stuck or invisible, because every rule below styles
+ * pseudo-elements that exist only mid-transition.
  *
  * Which hop is running is published on `<html data-auth-nav>` by form/wizardNav.ts,
  * because the API itself has no notion of where the user came from:
@@ -204,6 +203,12 @@
  *   enter   the gate → the first wizard step
  *   forward / back   step ↔ step, and error → terms
  *   submit  the last step → the success or error screen
+ *
+ * Note the selector shape those hops use: `:root[data-auth-nav='gate']::view-transition-…`,
+ * with no space. The view-transition pseudo tree hangs off the document element directly,
+ * so a descendant combinator does not reach it — `:root[…] ::view-transition-group(x)`
+ * parses, matches nothing, and fails silently. Every direction-specific rule in this file
+ * was written that way and every one of them was dead.
  */
 @supports (view-transition-name: none) {
   .auth-block-red {
@@ -251,22 +256,116 @@
     animation: auth-fade-in 400ms var(--ease-out-auth) both;
   }
 
+  /* --------------------------------------- the gate hop: the background morph ---- */
+
   /*
-   * The wizard paints no colour at all, so on the way in the blocks have no counterpart
-   * to morph into and on the way out no counterpart to morph from. Rather than let them
-   * blink, they sink out of the page and rise back into it — the same direction the
-   * sign-in entrance uses, so colour always enters this flow from below.
+   * Sign-in and the registration gate are built from the same three shapes, and this is
+   * the hop where that has to become obvious. Each pair is not merely the same colour —
+   * it is the same silhouette at twice the size (416x495 -> 833x995 for red, and the
+   * other two match to within half a percent of aspect ratio), so there is no shape
+   * change to disguise at all. The browser is interpolating a scale and a translation of
+   * one object, which is exactly what the user is being told they are looking at.
+   *
+   * The travel is what needs room: red crosses 860px and grows 2x. At the 520ms the rest
+   * of the flow uses, that reads as a cut with a smear in the middle — it was over before
+   * the eye had found it. 760ms on an ease-out (a hard push, then a long settle) is long
+   * enough to follow the shapes and still faster than the sheet that lands on top of them.
    */
-  :root[data-auth-nav='enter'] ::view-transition-old(auth-block-red),
-  :root[data-auth-nav='enter'] ::view-transition-old(auth-block-green),
-  :root[data-auth-nav='enter'] ::view-transition-old(auth-block-amber) {
-    animation: auth-block-sink 340ms var(--ease-morph) both;
+  :root[data-auth-nav='gate']::view-transition-group(auth-block-red),
+  :root[data-auth-nav='gate']::view-transition-group(auth-block-green),
+  :root[data-auth-nav='gate']::view-transition-group(auth-block-amber) {
+    animation-duration: 760ms;
+    animation-timing-function: var(--ease-out-auth);
   }
 
-  :root[data-auth-nav='submit'] ::view-transition-new(auth-block-red),
-  :root[data-auth-nav='submit'] ::view-transition-new(auth-block-green),
-  :root[data-auth-nav='submit'] ::view-transition-new(auth-block-amber) {
-    animation: auth-block-arrive 520ms var(--ease-out-auth) both;
+  /*
+   * Overriding `animation` on these pseudo-elements also drops the UA's
+   * `-ua-mix-blend-mode-plus-lighter`, which is what makes the default cross-fade sum to
+   * an opaque result. Without it two half-opaque snapshots composite to a translucent
+   * one — and over fills this large that showed as the whole screen going pale halfway
+   * through, the single worst thing about this hop before.
+   *
+   * So the fade is arranged never to be translucent instead of relying on the blend mode:
+   * the outgoing shape holds at full opacity underneath while the incoming one dissolves
+   * in above it, and only once the new shape is solid does the old one retire, unseen. The
+   * union of the two is opaque at every frame. That the pair are the same silhouette at
+   * the same layout width makes the swap invisible in any case; this is what guarantees it.
+   */
+  :root[data-auth-nav='gate']::view-transition-old(auth-block-red),
+  :root[data-auth-nav='gate']::view-transition-old(auth-block-green),
+  :root[data-auth-nav='gate']::view-transition-old(auth-block-amber) {
+    animation: auth-block-hold 760ms linear both;
+  }
+
+  :root[data-auth-nav='gate']::view-transition-new(auth-block-red),
+  :root[data-auth-nav='gate']::view-transition-new(auth-block-green),
+  :root[data-auth-nav='gate']::view-transition-new(auth-block-amber) {
+    animation: auth-block-take 760ms linear both;
+  }
+
+  /*
+   * The food has nowhere to go — the gate paints no pan, eggs or shakers — so naming each
+   * piece is not about pairing it with anything. It is about lifting it out of the
+   * page-level cross-fade, where it used to blink out in 360ms along with the sign-in copy,
+   * and giving it an exit of its own: the collage comes apart, nearest layer first, sinking
+   * and shrinking as the blocks it was sitting on expand past it.
+   *
+   * `ease-in` because these are leaving. The stagger is the entrance's cascade run
+   * backwards, so the collage disassembles in the reverse of the order it was built.
+   *
+   * Brisk — 240ms, and the last piece gone by 320 — for a reason that only showed up on
+   * film. These are dark objects fading over ground that is *itself* changing: the green
+   * block sweeps in underneath them, and a half-opaque black pan over green renders as a
+   * distinctly olive pan. Clearing the food out before the blocks have travelled far means
+   * it fades over the white page it was always sitting on. The cascade is what keeps that
+   * from reading as a blink.
+   */
+  .auth-food-pan {
+    view-transition-name: auth-food-pan;
+  }
+
+  .auth-food-egg-1 {
+    view-transition-name: auth-food-egg-1;
+  }
+
+  .auth-food-egg-2 {
+    view-transition-name: auth-food-egg-2;
+  }
+
+  .auth-food-egg-3 {
+    view-transition-name: auth-food-egg-3;
+  }
+
+  .auth-food-ring {
+    view-transition-name: auth-food-ring;
+  }
+
+  ::view-transition-old(auth-food-pan),
+  ::view-transition-old(auth-food-egg-1),
+  ::view-transition-old(auth-food-egg-2),
+  ::view-transition-old(auth-food-egg-3),
+  ::view-transition-old(auth-food-ring) {
+    animation: auth-food-leave 240ms ease-in both;
+  }
+
+  ::view-transition-old(auth-food-pan) {
+    animation-delay: 0ms;
+  }
+
+  ::view-transition-old(auth-food-egg-3) {
+    animation-delay: 20ms;
+  }
+
+  ::view-transition-old(auth-food-egg-2) {
+    animation-delay: 40ms;
+  }
+
+  ::view-transition-old(auth-food-egg-1) {
+    animation-delay: 60ms;
+  }
+
+  ::view-transition-old(auth-food-ring) {
+    animation-delay: 80ms;
   }
 
   /*
@@ -289,9 +388,9 @@
     animation-duration: 0s;
   }
 
-  :root[data-auth-nav='gate'] ::view-transition-group(auth-sheet),
-  :root[data-auth-nav='enter'] ::view-transition-group(auth-sheet),
-  :root[data-auth-nav='submit'] ::view-transition-group(auth-sheet) {
+  :root[data-auth-nav='gate']::view-transition-group(auth-sheet),
+  :root[data-auth-nav='enter']::view-transition-group(auth-sheet),
+  :root[data-auth-nav='submit']::view-transition-group(auth-sheet) {
     animation-duration: 520ms;
     animation-timing-function: var(--ease-morph);
   }
@@ -305,13 +404,61 @@
   }
 
   /*
-   * Sign-in has no plate, so that one hop is a pure entry: the card rises over the
-   * blocks still travelling underneath it. 40px is its own travel rather than a
-   * percentage, because the card is 850+ tall and a percentage would start it below
-   * the fold.
+   * Sign-in has no plate, so this hop is a pure entry — and it is the beat the whole
+   * gesture is built around: "ลงทะเบียนเข้าแข่งขัน" has to arrive as a sheet being
+   * presented, over a background still travelling underneath it.
+   *
+   * It used to rise 40px, which over an 850-tall card is a nudge nobody could see; the
+   * card simply cross-faded into place. `translateY(100%)` is 850px, which starts the
+   * plate's top edge just past the bottom of a 1024 viewport, so the sheet genuinely
+   * comes up off the bottom of the screen. That is the motion the request describes, and
+   * it is only affordable because the plate is one composited snapshot — 850px of
+   * animated `translate` on live layout would be unthinkable.
+   *
+   * Two animations rather than one keyframe doing both: the opacity is a 140ms fade that
+   * only exists so the plate does not hard-edge into existence at frame one, while the
+   * travel takes the full 700ms. Trying to key them together forces one timing function
+   * on both, and the two want completely different ones.
+   *
+   * The 120ms delay is what makes it read as one continuous motion instead of two things
+   * happening at once: the background commits to moving first, and the sheet answers it.
    */
-  :root[data-auth-nav='gate'] ::view-transition-new(auth-sheet) {
-    animation: auth-sheet-rise 460ms var(--ease-sheet) both;
+  :root[data-auth-nav='gate']::view-transition-new(auth-sheet) {
+    animation:
+      auth-fade-in 140ms linear 120ms both,
+      auth-sheet-present 700ms linear 120ms both;
+  }
+
+  /*
+   * The chrome comes down from the top edge while the sheet comes up from the bottom —
+   * opposite directions, so the two read as the screen assembling around its content
+   * rather than as one block sliding.
+   */
+  :root[data-auth-nav='gate']::view-transition-new(auth-topbar) {
+    animation:
+      auth-fade-in 260ms linear 180ms both,
+      auth-topbar-drop 520ms var(--ease-out-auth) 180ms both;
+  }
+
+  /*
+   * What is left in the root snapshot on this hop is the sign-in form column on one side
+   * and a white page on the other, so the cross-fade only has to clear the old copy out of
+   * the way. Short and early: the sign-in heading and button should be gone well before
+   * the blocks have finished travelling, or the two screens are legible at once and the
+   * whole thing reads as a dissolve instead of a move.
+   *
+   * Retimed with `animation-duration` alone, deliberately, where every other rule in this
+   * section overrides the whole `animation` shorthand. The shorthand would also discard the
+   * UA's `-ua-mix-blend-mode-plus-lighter` companion animation, which is the thing that
+   * makes a cross-fade of two half-opaque snapshots composite back to something opaque.
+   * The blocks can afford to lose it because their fade is hand-arranged to never be
+   * translucent; a full-page cross-fade cannot.
+   */
+  :root[data-auth-nav='gate']::view-transition-group(root),
+  :root[data-auth-nav='gate']::view-transition-old(root),
+  :root[data-auth-nav='gate']::view-transition-new(root) {
+    animation-duration: 280ms;
+    animation-timing-function: ease-out;
   }
 
   /*
@@ -343,14 +490,151 @@
   }
 }
 
-@keyframes auth-sheet-rise {
+/*
+ * The registration sheet arriving from off the bottom of the screen — sampled from a
+ * damped spring rather than drawn with a bezier, because "เด้งขึ้นมา" asks for a settle
+ * and a cubic-bezier cannot express one. A bezier with a control point past 1 gives a
+ * single lopsided overshoot that keeps accelerating into the stop; a spring overshoots and
+ * then returns, which is the motion an object with mass actually makes.
+ *
+ * Sampled at 5% from x(t) = 1 - e^(-ζωt)(cos ω_d t + (ζω/ω_d) sin ω_d t) with ζ = 0.84 and
+ * ω = 10.6, then normalised so the last sample is exactly 0 — no residual offset for the
+ * fill to hold. That damping puts the overshoot at 0.77% of the plate's height, about 7px:
+ * felt as a settle, never seen as a bounce. Under half a percent and it may as well not be
+ * there; past two and an 850px card starts to wobble like a toy.
+ *
+ * Paired with `linear`, which is not laziness — the samples *are* the easing, and any
+ * timing function on top would ease each 5% segment separately and flatten the curve.
+ *
+ * Percentages, not pixels: the plate's height changes with the viewport and the content,
+ * and 100% is by definition exactly its own height, which is what puts its top edge below
+ * the fold at every size instead of only at 1024.
+ */
+@keyframes auth-sheet-present {
+  0% {
+    transform: translateY(100%);
+  }
+  5% {
+    transform: translateY(89.57%);
+  }
+  10% {
+    transform: translateY(69.01%);
+  }
+  15% {
+    transform: translateY(48.03%);
+  }
+  20% {
+    transform: translateY(30.69%);
+  }
+  25% {
+    transform: translateY(18%);
+  }
+  30% {
+    transform: translateY(9.51%);
+  }
+  35% {
+    transform: translateY(4.3%);
+  }
+  40% {
+    transform: translateY(1.38%);
+  }
+  45% {
+    transform: translateY(-0.07%);
+  }
+  50% {
+    transform: translateY(-0.65%);
+  }
+  55% {
+    transform: translateY(-0.77%);
+  }
+  60% {
+    transform: translateY(-0.68%);
+  }
+  65% {
+    transform: translateY(-0.52%);
+  }
+  70% {
+    transform: translateY(-0.36%);
+  }
+  75% {
+    transform: translateY(-0.23%);
+  }
+  80% {
+    transform: translateY(-0.13%);
+  }
+  85% {
+    transform: translateY(-0.07%);
+  }
+  90% {
+    transform: translateY(-0.03%);
+  }
+  95% {
+    transform: translateY(-0.01%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* the page chrome meets the sheet coming the other way */
+@keyframes auth-topbar-drop {
   from {
-    opacity: 0;
-    transform: translateY(40px);
+    transform: translateY(-24px);
   }
   to {
-    opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/*
+ * The two halves of the block morph's cross-fade. Deliberately asymmetric: `hold` keeps
+ * the outgoing shape fully opaque for as long as the incoming one is still translucent, so
+ * their union is opaque on every frame, and only lets go once `take` has reached 1 and is
+ * covering it. Reversing the two — the obvious symmetric cross-fade — is what made the
+ * screen go pale mid-morph.
+ *
+ * The window is over inside the first third rather than spread across the travel, and that
+ * is a narrow-viewport fix. Below `lg` the sign-in collage is not rendered at all, so there
+ * is no outgoing snapshot for these to pair with and no `hold` underneath them — the blocks
+ * are a plain entrance, and a leisurely fade left them washed out and pastel over white for
+ * a third of a second. Reaching full opacity early costs the desktop morph nothing, because
+ * both snapshots are the same silhouette laid out at the same width, so what the cross-fade
+ * is concealing there is nothing at all.
+ */
+@keyframes auth-block-hold {
+  0%,
+  34% {
+    opacity: 1;
+  }
+  56%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes auth-block-take {
+  0% {
+    opacity: 0;
+  }
+  30%,
+  100% {
+    opacity: 1;
+  }
+}
+
+/*
+ * The collage coming apart. It sinks *and* contracts while the colour blocks it was
+ * arranged on expand to twice the size — the two families moving in opposite directions is
+ * what sells them as one background rearranging rather than one screen replacing another.
+ */
+@keyframes auth-food-leave {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, 52px, 0) scale(0.88);
   }
 }
 
@@ -452,11 +736,11 @@
    * leaves towards when the wizard is submitted. Only those two hops: between steps the
    * cluster has a counterpart on both sides and must not move at all.
    */
-  :root[data-auth-nav='enter'] ::view-transition-new(wizard-pasta) {
+  :root[data-auth-nav='enter']::view-transition-new(wizard-pasta) {
     animation: wizard-pasta-arrive 560ms var(--ease-out-auth) both;
   }
 
-  :root[data-auth-nav='submit'] ::view-transition-old(wizard-pasta) {
+  :root[data-auth-nav='submit']::view-transition-old(wizard-pasta) {
     animation: wizard-pasta-leave 320ms ease-out both;
   }
 
@@ -469,11 +753,11 @@
     animation: wizard-enter-forward 300ms var(--ease-out-auth) both;
   }
 
-  :root[data-auth-nav='back'] ::view-transition-old(wizard-body) {
+  :root[data-auth-nav='back']::view-transition-old(wizard-body) {
     animation: wizard-exit-forward 200ms ease-out both;
   }
 
-  :root[data-auth-nav='back'] ::view-transition-new(wizard-body) {
+  :root[data-auth-nav='back']::view-transition-new(wizard-body) {
     animation: wizard-enter-back 300ms var(--ease-out-auth) both;
   }
 }

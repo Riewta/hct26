@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom'
 import AuthPageShell, { RESULT_ACTION, ResultCard } from '../../components/AuthPageShell'
-import { markAuthNav, supportsViewTransitions } from '../../components/form/wizardNav'
+import { useAuthLink } from '../../components/form/wizardNav'
 
 /** Figma 708:2022. */
 export default function SuccessStep() {
+  const authLink = useAuthLink()
+
   return (
     <AuthPageShell>
       <ResultCard
@@ -16,12 +18,7 @@ export default function SuccessStep() {
         action={
           /* the dashboard shares none of this flow's named elements, so `leave` asks for
              the plain crossfade rather than pretending something carries over. */
-          <Link
-            to="/my-team"
-            viewTransition={supportsViewTransitions}
-            onClick={() => markAuthNav('leave')}
-            className={RESULT_ACTION}
-          >
+          <Link {...authLink('/my-team', 'leave')} className={RESULT_ACTION}>
             <img
               src="/assets/figma/c17718ad4d456345bef1d48d85cea6708137ea6e.svg"
               alt=""

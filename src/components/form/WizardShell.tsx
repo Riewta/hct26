@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import GoogleLogo from '../GoogleLogo'
 import { WizardBackdrop } from '../AuthBackdrop'
 import ScrollEdgeEffect from '../ScrollEdgeEffect'
-import { markAuthNav, supportsViewTransitions } from './wizardNav'
+import { useAuthLink } from './wizardNav'
 
 export const TOTAL_STEPS = 5
 
@@ -176,13 +176,10 @@ const STEP_BUTTON =
   'flex items-center justify-center gap-3 rounded-[12px] bg-brand-red py-4 text-lg leading-[1.4] font-medium text-white transition-[opacity,transform] duration-[160ms] ease-out hover:opacity-90 active:scale-[0.97] motion-reduce:active:scale-100 lg:text-xl'
 
 export function BackButton({ to }: { to: string }) {
+  const authLink = useAuthLink()
+
   return (
-    <Link
-      to={to}
-      viewTransition={supportsViewTransitions}
-      onClick={() => markAuthNav('back')}
-      className={`${STEP_BUTTON} pr-6 pl-4`}
-    >
+    <Link {...authLink(to, 'back')} className={`${STEP_BUTTON} pr-6 pl-4`}>
       <img
         src="/assets/figma/41418d29fd1f773c0f14bc317b19bd65b6f49ee8.svg"
         alt=""
@@ -195,13 +192,10 @@ export function BackButton({ to }: { to: string }) {
 }
 
 export function NextButton({ to, label = 'ถัดไป' }: { to: string; label?: string }) {
+  const authLink = useAuthLink()
+
   return (
-    <Link
-      to={to}
-      viewTransition={supportsViewTransitions}
-      onClick={() => markAuthNav('forward')}
-      className={`${STEP_BUTTON} ml-auto pr-4 pl-6`}
-    >
+    <Link {...authLink(to, 'forward')} className={`${STEP_BUTTON} ml-auto pr-4 pl-6`}>
       {label}
       <img
         src="/assets/figma/a275512325b630305418a611fed5319ba90acfc8.svg"
@@ -219,13 +213,10 @@ export function NextButton({ to, label = 'ถัดไป' }: { to: string; labe
  * back out and the colour blocks have to return (styles/auth-motion.css).
  */
 export function SubmitButton({ to, label }: { to: string; label: string }) {
+  const authLink = useAuthLink()
+
   return (
-    <Link
-      to={to}
-      viewTransition={supportsViewTransitions}
-      onClick={() => markAuthNav('submit')}
-      className={`${STEP_BUTTON} ml-auto px-6`}
-    >
+    <Link {...authLink(to, 'submit')} className={`${STEP_BUTTON} ml-auto px-6`}>
       {label}
     </Link>
   )

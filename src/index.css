@@ -72,12 +72,16 @@
   --fl: clamp(0px, calc((100vw - 375px) / 1065), 1px);
   --flv: clamp(0px, calc((100vw - 375px) / 649), 1px);
 
-  /* Content gutter. 16 at 375 → 120 at 1440, where it meets the 1200 column that
+  /* Content gutter. 20 at 375 → 120 at 1440, where it meets the 1200 column that
      `max-w-[1200px]` caps: 120 + 1200 + 120 = the 1440 frame exactly. The old
      `px-4 lg:px-15` only ever reached 60, so between 1024 and 1440 the full-size
      1440 typography sat in a column barely narrower than the viewport — which is
-     what made the proportions read as too big and too wide. */
-  --fl-gutter: calc(16px + 104 * var(--fl));
+     what made the proportions read as too big and too wide.
+
+     The floor is 20 rather than 16: at 390 the old 16 left the cards butting almost
+     against the bezel, which is part of why the phone render read as a squeezed
+     desktop rather than a phone composition. 1440 is unchanged. */
+  --fl-gutter: calc(20px + 100 * var(--fl));
 
   /* The nav pill and the footer sit in Figma's wider 1320 column, inset 60. */
   --fl-gutter-wide: calc(16px + 44 * var(--fl));
@@ -93,54 +97,82 @@
   padding-inline: var(--fl-gutter-wide);
 }
 
-/* --------------------------------------------------------------- type ramp
-   One utility per distinct size *pair* in the design, replacing a `text-a lg:text-b`
-   couple with a single continuously interpolated value. Named for the role rather
-   than the size so the call sites stay legible; the px pair is the comment. */
+/* -------------------------------------------------------------- type ladder
+   ONE ordered ladder for every marketing page, calibrated against the *registration
+   screens* rather than against Figma's 1440 marketing numbers. Those numbers are the
+   design, but they are drawn for a 1440 display and transcribing them literally left
+   the three main pages reading a full step louder than the wizard sitting next to
+   them — 48px section headings against the wizard's 40px page title, 24px body
+   against its 20px.
 
-@utility fl-eyebrow {
-  font-size: calc(18px + 6 * var(--fl)); /* 18 → 24 */
-}
+   Measured live off /register and /register/team, which is the reference:
+
+     caption 16 → 16 · body 18 → 20 · section h2 24 → 28 · page h1 30 → 40
+
+   The eight ranks below land inside that envelope at both ends.
+
+   Ordering is structural, not coincidental. Every rank is `calc(MIN + DELTA * --fl)`
+   and MIN *and* DELTA both decrease strictly down the ladder, so the difference
+   between two neighbouring ranks is itself `a + b * --fl` with a > 0 and b > 0 —
+   positive for every value of the ramp. That is what makes the hierarchy hold at
+   360, 768, 1024 and 1440 alike, rather than only at the two ends where the old
+   overlapping pairs happened to be checked.
+
+     rank           375   1440   role
+     fl-display      28     40   the page's own h1 — one per page
+     fl-section      23     34   a numbered section's h2
+     fl-title        19     26   card heading
+     fl-title-sm     17     23   card sub-heading, FAQ question
+     fl-lead         16     21   section subtitle, intro and feature copy
+     fl-body         15     19   body copy, list items
+     fl-eyebrow      14   17.5   the "01 / 02 / 03" section marker
+     fl-caption      13     16   meta, units, footnotes
+
+   Display numerals sit deliberately OUTSIDE the ladder. A date set as the visual
+   subject of a card is a graphic rather than a heading, and Figma places them above
+   the section title on purpose (60 against 48); they keep that relationship. Their
+   floors are cut hard, though — 36px on a 390 phone was the single largest thing on
+   the page. */
 
 @utility fl-display {
-  font-size: calc(30px + 18 * var(--fl)); /* 30 → 48 */
+  font-size: calc(28px + 12 * var(--fl)); /* 28 → 40 */
+}
+
+@utility fl-section {
+  font-size: calc(23px + 11 * var(--fl)); /* 23 → 34 */
 }
 
 @utility fl-title {
-  font-size: calc(24px + 6 * var(--fl)); /* 24 → 30 */
+  font-size: calc(19px + 7 * var(--fl)); /* 19 → 26 */
 }
 
 @utility fl-title-sm {
-  font-size: calc(20px + 8 * var(--fl)); /* 20 → 28 */
-}
-
-@utility fl-title-alt {
-  font-size: calc(24px + 4 * var(--fl)); /* 24 → 28 */
+  font-size: calc(17px + 6 * var(--fl)); /* 17 → 23 */
 }
 
 @utility fl-lead {
-  font-size: calc(16px + 8 * var(--fl)); /* 16 → 24 */
-}
-
-/* Body copy that also lands on 24 at 1440 but starts a step up from `fl-lead`. */
-@utility fl-copy {
-  font-size: calc(18px + 6 * var(--fl)); /* 18 → 24 */
+  font-size: calc(16px + 5 * var(--fl)); /* 16 → 21 */
 }
 
 @utility fl-body {
-  font-size: calc(18px + 2 * var(--fl)); /* 18 → 20 */
+  font-size: calc(15px + 4 * var(--fl)); /* 15 → 19 */
 }
 
-@utility fl-body-lg {
-  font-size: calc(20px + 2 * var(--fl)); /* 20 → 22 */
+@utility fl-eyebrow {
+  font-size: calc(14px + 3.5 * var(--fl)); /* 14 → 17.5 */
 }
 
+@utility fl-caption {
+  font-size: calc(13px + 3 * var(--fl)); /* 13 → 16 */
+}
+
+/* Display numerals — see above. */
 @utility fl-num-lg {
-  font-size: calc(30px + 10 * var(--fl)); /* 30 → 40 */
+  font-size: calc(20px + 12 * var(--fl)); /* 20 → 32 */
 }
 
 @utility fl-num-xl {
-  font-size: calc(36px + 24 * var(--fl)); /* 36 → 60 */
+  font-size: calc(24px + 22 * var(--fl)); /* 24 → 46 */
 }
 
 /* The nav row and its CTA. These had no `lg:` pair at all — a flat 20px that only
@@ -238,6 +270,25 @@
  * The height has to track the scale or the band would keep its 906 while the art inside it
  * grew past the clip. Below lg the two step values are unchanged.
  */
+/*
+ * /my-team's decoration band. Same problem and same shape of answer as `.hof-band` below:
+ * the art is authored on the 1440 canvas, but this is a self-contained band pinned to the top
+ * of the page rather than props registered against section positions, so it can simply be
+ * scaled rather than hidden. `translate` and `scale` are the individual transform properties,
+ * not `transform` — the element needs both and the longhands compose in a fixed order
+ * (translate, then scale) without either one clobbering the other, which a single `transform`
+ * shorthand shared with a Tailwind utility could not do.
+ *
+ * `tan(atan2(a, b))` is the standard way to get a plain number out of two lengths, since
+ * calc() will not divide a length by a length. Capped at 1: past 1440 the band is already
+ * wider than the viewport.
+ */
+.team-decor-stage {
+  translate: -50% 0;
+  scale: min(1, tan(atan2(100vw, 1440px)));
+  transform-origin: top center;
+}
+
 .hof-band {
   --hof-scale: 0.45;
   height: calc(906px * var(--hof-scale));
