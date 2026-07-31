@@ -60,7 +60,17 @@ export default function Calendar() {
 
         {/* highlight row + the three date cards are one 684-tall block, 24 apart */}
         <div className="flex flex-col gap-6">
-          <div ref={cards.ref} className={`grid gap-6 lg:grid-cols-[700fr_476fr] ${cards.cls}`}>
+          {/*
+           * Two-up from `md`, not only from `lg`. Stacked at 768 these two became 712-wide
+           * cards with a 316 floor — a date at the top, one line at the bottom and a third of
+           * a screen of gradient between them, twice. Side by side at 768 each is 315x316, a
+           * near-square that the bowl garnish fills. The 700/476 split is still Figma's, and
+           * still only applies where Figma's row exists.
+           */}
+          <div
+            ref={cards.ref}
+            className={`grid gap-6 md:grid-cols-2 lg:grid-cols-[700fr_476fr] ${cards.cls}`}
+          >
             {TIMELINE_HIGHLIGHTS.map((item) => (
               <article
                 key={item.date}
@@ -96,7 +106,9 @@ export default function Calendar() {
             ))}
           </div>
 
-          <div ref={steps.ref} className={`grid gap-6 sm:grid-cols-2 lg:grid-cols-3 ${steps.cls}`}>
+          {/* three cards, so two columns leaves the third orphaned beside a half-empty row.
+              One column until there is room for all three at `md`. */}
+          <div ref={steps.ref} className={`grid gap-6 md:grid-cols-3 ${steps.cls}`}>
             {TIMELINE_STEPS.map((item) => (
               <article
                 key={item.date}

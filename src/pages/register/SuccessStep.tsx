@@ -1,11 +1,9 @@
 import { Link } from 'react-router-dom'
 import AuthPageShell, { RESULT_ACTION, ResultCard } from '../../components/AuthPageShell'
-import { useAuthLink } from '../../components/form/wizardNav'
+import { authLink } from '../../components/form/wizardNav'
 
 /** Figma 708:2022. */
 export default function SuccessStep() {
-  const authLink = useAuthLink()
-
   return (
     <AuthPageShell>
       <ResultCard

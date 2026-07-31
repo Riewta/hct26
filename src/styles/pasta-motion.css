@@ -29,6 +29,32 @@
      browser promotes it anyway, and twenty permanent composited layers behind a whole
      page is not a trade worth making. */
 
+/* ------------------------------------------------- the 1440 canvas, narrowed ----
+
+   Every decoration on this site is authored against Figma's 1440 canvas, and the numbers
+   are transcribed as px. `--decor-fit` is the one factor that turns those px into a narrow
+   viewport's: 100vw / 1440, capped at 1 so nothing at or above 1440 moves — that geometry
+   is the design and was measured against it.
+
+   `tan(atan2(a, b))` is the standard way to get a plain number out of two lengths: calc()
+   will not divide a length by a length, but atan2 takes two lengths and returns an angle,
+   and tan turns that back into the ratio a/b. Same trick `.hof-band` and `.team-decor-stage`
+   use in index.css; it lives here as a variable so the three canvases share one definition
+   and so a group's *anchor* can be scaled by it too — `calc(-314px * var(--decor-fit))` —
+   which a bare `scale` on the stage could never do, because a stage's own offsets are
+   outside its transform.
+
+   A stage carries the scale and a `transform-origin` naming the corner it is pinned by.
+   `scale` is the individual transform property, not `transform`: the art inside a stage
+   already uses `transform` for Figma's rotations and flips, and the two must not collide. */
+.decor-fit {
+  --decor-fit: min(1, tan(atan2(100vw, 1440px)));
+}
+
+.decor-stage {
+  scale: var(--decor-fit);
+}
+
 @keyframes pasta-flow {
   0% {
     transform: translate3d(var(--pasta-dx), var(--pasta-dy), 0) rotate(var(--pasta-spin))

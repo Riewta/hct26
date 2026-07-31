@@ -18,11 +18,17 @@ export default function CodernSection() {
        * the bitmap is 800px larger than its box on every side.
        */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        {/*
+         * `decor-fit decor-stage` rather than `hidden lg:block`: the wash used to vanish below
+         * lg, which was part of why the phone page looked bare. The stage scales about its own
+         * top-left and the anchor is scaled by the same factor, so the blob keeps its position
+         * relative to the section at every width. See `.decor-fit` in pasta-motion.css.
+         */}
         <div
-          className="absolute hidden lg:block"
+          className="decor-fit decor-stage absolute origin-top-left"
           style={{
-            left: 611 + 1125 / 2 - 1155 / 2,
-            top: 10 + 1155 / 2 - 1125 / 2,
+            left: 'calc(596px * var(--decor-fit))',
+            top: 'calc(25px * var(--decor-fit))',
             width: 1155,
             height: 1125,
             transform: 'rotate(90deg) scaleY(-1)',

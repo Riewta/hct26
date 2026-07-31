@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+/* the section-anchor hook, where the pattern is written up — see HomeBackground.tsx */
+import { useSectionAnchor } from './HomeBackground'
 
 /**
  * The About page's page-level decorations — the soft out-of-focus food behind the four
@@ -7,8 +9,13 @@ import type { ReactNode } from 'react'
  * content — so they render here as a single 1440-wide canvas at the back of the page.
  * (The Star mascot is not part of that frame; it stays a foreground piece of FaqSection.)
  *
- * The canvas is desktop-only. Below `lg` the sections no longer have Figma's fixed
- * heights, so page-absolute offsets would land nowhere near the content they belong to.
+ * The page-absolute canvas is desktop-only: below `lg` the sections do not have Figma's
+ * fixed heights, so a page y lands nowhere near the content it belongs to. It used to be
+ * the *whole* file, which left every phone with a blank white guide page — 39 of the page's
+ * decorations simply absent. The same art is drawn below `lg` by `<Narrow>` at the bottom of
+ * this file: the frame's four groups, each as a `.decor-stage` — the group's own px geometry,
+ * scaled by `--decor-fit` (100vw/1440, see styles/pasta-motion.css) about the corner it is
+ * pinned by, and pinned to a page edge or to a measured section rather than to a page y.
  */
 
 const A = '/assets/figma/'
@@ -265,55 +272,212 @@ function Props({ items, x, y }: { items: Prop[]; x: number; y: number }) {
 }
 
 /**
+ * The napkins, clipped to their own box rather than to the screen. Everything else on this
+ * canvas is either a soft wash or a prop whose Figma box already ends inside the page, so it
+ * can bleed past 1440 without showing anything Figma does not; the napkins are hard-edged
+ * and 1500px wide, and past 1440 the clip is the only thing standing between the corner of
+ * cloth Figma paints and the whole tablecloth.
+ */
+function Napkins() {
+  return (
+    <div className="absolute inset-0 overflow-hidden">
+      {NAPKINS.map((n, i) => (
+        <div
+          key={i}
+          /*
+           * Napkin 2 drops and slides out below `lg`. At Figma's own position the scaled
+           * cloth runs straight under the scope section's intro paragraph, and grey light
+           * copy over yellow gingham is not readable — on a phone that paragraph is the full
+           * width of the column, so unlike on desktop there is no clear lane beside it. The
+           * offsets are in canvas px inside a stage that scales by 100vw/1440, so they shrink
+           * with everything else; 258 puts the cloth's leading edge just below the paragraph
+           * at 390 and further below it as the viewport narrows. Untouched from `lg` up.
+           */
+          className={`absolute flex items-center justify-center ${
+            i === 1 ? 'max-lg:translate-x-[-90px] max-lg:translate-y-[258px]' : ''
+          }`}
+          style={{ left: n.x, top: n.y, width: n.w, height: n.h }}
+        >
+          <div
+            className="relative shrink-0 overflow-hidden"
+            style={{ width: n.iw, height: n.ih, transform: `rotate(${n.rot}deg)` }}
+          >
+            <img src={PASTA} alt="" className="absolute max-w-none" style={NAPKIN_FILL} />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * The garlic band between the FAQ and the Contact section: the beige blob, Figma's second
+ * copy of the big heap, and the clipping "Garlic Row" frame. `x`/`y` is the row frame's own
+ * origin (page 867, 3196 on the 1440 canvas); the other two carry their offsets from it, so
+ * the whole band can be moved as one thing.
+ */
+function GarlicBand({ x, y }: { x: number; y: number }) {
+  return (
+    <>
+      {/*
+       * Wave 3 (935:1298), the beige blob under the garlic. Figma reports the node's
+       * pre-rotation origin, so its 180° turn puts the box at (1600-597, 3690-378).
+       */}
+      <img
+        src={GARLIC_WAVE}
+        alt=""
+        className="absolute max-w-none rotate-180"
+        style={{ left: x + 136, top: y + 116, width: 597, height: 378 }}
+      />
+      {/*
+       * Figma keeps a second copy of the big heap (935:1299) in its own frame, painted
+       * just under the row. Its bbox works out to exactly where the row's own copy lands
+       * — (960, 3209), the row's (867+93, 3196+13) — so the two coincide; it is drawn
+       * because the frame does, not because it adds anything.
+       */}
+      <div
+        className="absolute overflow-hidden"
+        style={{ left: x + 93, top: y + 12.98, width: 718.808, height: 708.605 }}
+      >
+        <GarlicHeap heap={{ ...HEAPS[0], x: 0, y: 0 }} />
+      </div>
+      {/* "Garlic Row" (935:1306), which clips — the only reason the heaps stop where they
+          do rather than running on down over the map. */}
+      <div
+        className="absolute overflow-hidden"
+        style={{ left: x, top: y, width: 811.808, height: 721.604 }}
+      >
+        {HEAPS.map((heap, i) => (
+          <GarlicHeap key={i} heap={heap} />
+        ))}
+      </div>
+    </>
+  )
+}
+
+/**
+ * "Decoration / Circle" (935:1656) — a #D79A4E blob at 20% under a 400px layer blur,
+ * and the frame's last child, so it washes over everything above. Its 1125x1155 box
+ * holds a quarter-turned 1155x1125 blob, the same art the homepage's two washes use;
+ * the blur is baked into the export, which is why the SVG is 2755x2725 — 800px past
+ * the art on every side — and why the img is offset by that bleed.
+ *
+ * Drawn at every width and never scaled, for the reason the homepage's two washes are not:
+ * it is one soft gradient thousands of px across, a centred slice of it reads as the same
+ * tint whatever the viewport, and shrinking it would take away the only thing standing
+ * between a narrow guide page and flat white.
+ */
+function Wash() {
+  return (
+    <div
+      className="absolute flex items-center justify-center"
+      style={{ left: 611, top: 1116, width: 1125, height: 1155 }}
+    >
+      <div className="relative shrink-0 rotate-90" style={{ width: 1155, height: 1125 }}>
+        <img
+          src={WASH}
+          alt=""
+          className="absolute max-w-none"
+          style={{ left: -800, top: -800, width: 2755, height: 2725 }}
+        />
+      </div>
+    </div>
+  )
+}
+
+/**
  * The background frame is 1440x4888 — it stops where the footer starts — and clips its
  * children to that box, so the tomatoes and pots (whose boxes run to page y 5008) are
  * cut at 4888 rather than drawn on under the footer.
  */
-function Canvas({ children }: { children: ReactNode }) {
+function Canvas({ narrow, children }: { narrow: ReactNode; children: ReactNode }) {
   return (
     /*
      * Outer box = the clip, viewport-wide so the oversized washes reach the screen edge
-     * instead of leaving a white gutter past 1440. Inner box = the coordinate space, a
-     * centred 1440, because every child is pinned at its Figma page x/y.
+     * instead of leaving a white gutter past 1440, and the box the narrow bands are pinned
+     * to. Inner box = the coordinate space, a centred 1440, because every child of it is
+     * pinned at its Figma page x/y.
+     *
+     * `inset-0` and not `top-0 h-[4888px]`: the parent page wrapper's bottom is exactly
+     * where the footer starts at every width (`lg:min-h-[4888px]` only pins it to the Figma
+     * frame's height on desktop), so stretching to it gives the tomatoes and the pots a
+     * bottom edge to sit on that is right at 390 as well as at 1440.
      */
     <div
       aria-hidden
-      className="pointer-events-none absolute top-0 left-1/2 -z-10 hidden h-[4888px] w-screen -translate-x-1/2 overflow-hidden lg:block"
+      className="decor-fit pointer-events-none absolute inset-0 left-1/2 -z-10 w-screen -translate-x-1/2 overflow-clip"
     >
-      <div className="absolute top-0 left-1/2 h-full w-[1440px] -translate-x-1/2">{children}</div>
+      {narrow}
+      <div className="absolute top-0 left-1/2 h-full w-[1440px] -translate-x-1/2">
+        <div className="hidden lg:block">{children}</div>
+        <Wash />
+      </div>
+    </div>
+  )
+}
+
+/*
+ * Below `lg`: the frame's four groups again, each pinned to something that exists at any
+ * height. The napkins hang off the top of the page and the tomatoes and pots off its bottom,
+ * both of which are page edges; the garlic band belongs to the seam between the FAQ and the
+ * Contact section, which is a *measured* section edge, because the FAQ's height below `lg` is
+ * whatever its own reflowed questions come to.
+ *
+ * "Vector Shape" (935:1125), the #FFEAB4 field behind the FAQ, is deliberately not here:
+ * FaqSection paints that field itself, at every width, centred on its own box — which is a
+ * better anchor for it than anything this canvas could offer.
+ */
+function Narrow() {
+  const faq = useSectionAnchor('faq')
+
+  return (
+    <div className="lg:hidden">
+      {/*
+       * The napkins, pinned to the top of the page and centred. `-translate-x-1/2` and
+       * `scale` are separate transform properties and compose in a fixed order, so the box
+       * is centred first and then scaled about its own top centre — which maps the 1440
+       * canvas onto the viewport exactly.
+       */}
+      <div className="decor-stage absolute top-0 left-1/2 h-[1906px] w-[1440px] origin-top -translate-x-1/2">
+        <Napkins />
+      </div>
+
+      {/* The garlic band, at the fraction of the FAQ section Figma puts it at: its row frame
+          starts at page 3196, and Figma's FAQ box is 2209..3204 — i.e. 99.2% of the way
+          down it, the seam with the Contact section. */}
+      {faq && (
+        <div
+          className="decor-stage absolute h-[721.604px] w-[811.808px] origin-top-left"
+          style={{
+            left: 'calc(867px * var(--decor-fit))',
+            top: faq.top + 0.9919 * faq.height,
+          }}
+        >
+          <GarlicBand x={0} y={0} />
+        </div>
+      )}
+
+      {/*
+       * The tomatoes and the pots, pinned to the page's foot. The stage is the window from
+       * the tomatoes' own top (page 4515) down to the frame's bottom edge (4888), scaled
+       * about that bottom edge — so what runs past it, which in Figma is cut by the frame,
+       * is cut here by the canvas instead, at the same place proportionally.
+       */}
+      <div className="decor-stage absolute bottom-0 left-1/2 h-[373px] w-[1440px] origin-bottom -translate-x-1/2">
+        <Props items={POTS} x={1031} y={66} />
+        <Props items={TOMATOES} x={-149.69} y={0} />
+      </div>
     </div>
   )
 }
 
 export function AboutDecor() {
   return (
-    <Canvas>
+    <Canvas narrow={<Narrow />}>
       {/* Frame paint order, bottom-most first: pots, tomatoes, pasta, garlic, wash. */}
       <Props items={POTS} x={1031} y={4581} />
       <Props items={TOMATOES} x={-149.69} y={4515.094} />
-      {/*
-       * The napkins, clipped to the 1440 column rather than to the screen. Everything else
-       * on this canvas is either a soft wash or a prop whose Figma box already ends inside
-       * the page, so it can bleed past 1440 without showing anything Figma does not; the
-       * napkins are hard-edged and 1500px wide, and past 1440 the clip is the only thing
-       * standing between the corner of cloth Figma paints and the whole tablecloth.
-       */}
-      <div className="absolute inset-0 overflow-hidden">
-        {NAPKINS.map((n, i) => (
-          <div
-            key={i}
-            className="absolute flex items-center justify-center"
-            style={{ left: n.x, top: n.y, width: n.w, height: n.h }}
-          >
-            <div
-              className="relative shrink-0 overflow-hidden"
-              style={{ width: n.iw, height: n.ih, transform: `rotate(${n.rot}deg)` }}
-            >
-              <img src={PASTA} alt="" className="absolute max-w-none" style={NAPKIN_FILL} />
-            </div>
-          </div>
-        ))}
-      </div>
+      <Napkins />
       {/*
        * "Vector Shape" (935:1125) — the #FFEAB4 field behind the FAQ, whose curved bottom
        * edge is what the contact section is drawn against and what the garlic heap rides.
@@ -336,58 +500,7 @@ export function AboutDecor() {
         className="absolute max-w-none"
         style={{ left: -794, top: 2332, width: 3023, height: 1163 }}
       />
-      {/*
-       * Wave 3 (935:1298), the beige blob under the garlic. Figma reports the node's
-       * pre-rotation origin, so its 180° turn puts the box at (1600-597, 3690-378).
-       */}
-      <img
-        src={GARLIC_WAVE}
-        alt=""
-        className="absolute max-w-none rotate-180"
-        style={{ left: 1003, top: 3312, width: 597, height: 378 }}
-      />
-      {/*
-       * Figma keeps a second copy of the big heap (935:1299) in its own frame, painted
-       * just under the row. Its bbox works out to exactly where the row's own copy lands
-       * — (960, 3209), the row's (867+93, 3196+13) — so the two coincide; it is drawn
-       * because the frame does, not because it adds anything.
-       */}
-      <div
-        className="absolute overflow-hidden"
-        style={{ left: 960, top: 3208.98, width: 718.808, height: 708.605 }}
-      >
-        <GarlicHeap heap={{ ...HEAPS[0], x: 0, y: 0 }} />
-      </div>
-      {/* "Garlic Row" (935:1306), which clips — the only reason the heaps stop where they
-          do rather than running on down over the map. */}
-      <div
-        className="absolute overflow-hidden"
-        style={{ left: 867, top: 3196, width: 811.808, height: 721.604 }}
-      >
-        {HEAPS.map((heap, i) => (
-          <GarlicHeap key={i} heap={heap} />
-        ))}
-      </div>
-      {/*
-       * "Decoration / Circle" (935:1656) — a #D79A4E blob at 20% under a 400px layer blur,
-       * and the frame's last child, so it washes over everything above. Its 1125x1155 box
-       * holds a quarter-turned 1155x1125 blob, the same art the homepage's two washes use;
-       * the blur is baked into the export, which is why the SVG is 2755x2725 — 800px past
-       * the art on every side — and why the img is offset by that bleed.
-       */}
-      <div
-        className="absolute flex items-center justify-center"
-        style={{ left: 611, top: 1116, width: 1125, height: 1155 }}
-      >
-        <div className="relative shrink-0 rotate-90" style={{ width: 1155, height: 1125 }}>
-          <img
-            src={WASH}
-            alt=""
-            className="absolute max-w-none"
-            style={{ left: -800, top: -800, width: 2755, height: 2725 }}
-          />
-        </div>
-      </div>
+      <GarlicBand x={867} y={3196} />
     </Canvas>
   )
 }

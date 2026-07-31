@@ -479,19 +479,16 @@ export function ColourBlockBackdrop({ muted = false }: { muted?: boolean }) {
         style={{ background: muted ? '#f0f0f0' : '#d79a4e' }}
       />
       {/*
-       * The parallax rides its own wrapper, not the 1440 box below it: that box is
-       * centred with a translate, and a keyframe animating `transform` on the same
-       * element would drop the centring. The blocks run far past the frame on every side
-       * (amber alone reaches y=1506 of a 1024 frame), so 80px of lag never exposes an
-       * edge. The bottom fill band stays outside the wrapper — it has to keep covering
-       * the fold whatever the blocks do.
+       * These blocks used to carry a scroll-linked parallax, and it was wrong here. On a
+       * marketing page a backdrop drifting against the scroll reads as depth; on a form the
+       * user is reading and filling in, the same drift reads as the background coming
+       * loose — "register ตอนนี้ถ้าเลื่อนขึ้นลง มันจะขยับพื้นหลัง". The blocks are the page's
+       * ground, so they are now pinned to it and only the content moves.
        */}
-      <div className="auth-parallax-lag absolute inset-0">
-        <div className="absolute top-0 left-1/2 h-[1024px] w-[1440px] -translate-x-1/2">
-          {blocks.map((block) => (
-            <Block key={block.src} {...block} />
-          ))}
-        </div>
+      <div className="absolute top-0 left-1/2 h-[1024px] w-[1440px] -translate-x-1/2">
+        {blocks.map((block) => (
+          <Block key={block.src} {...block} />
+        ))}
       </div>
     </div>
   )
@@ -641,13 +638,13 @@ export function WizardBackdrop({ withTomatoes = true }: { withTomatoes?: boolean
       <div className="absolute inset-y-0 left-1/2 w-[1440px] -translate-x-1/2">
         {/*
          * Named so the decoration is lifted out of the step-to-step crossfade and holds
-         * still. The two clusters also carry the wizard's scroll parallax, and they take
-         * opposite halves of it: the pasta lags the page as a far layer would, the
-         * tomatoes outrun it, and the entrant steps are long enough (well past 2000px) to
-         * make the split obvious. Both are transform-only and compositor-driven.
+         * still. It used to hold still only between steps: both clusters also took opposite
+         * halves of a scroll parallax, which on these very long form pages was the most
+         * visible motion on screen and read as the backdrop sliding about under the card.
+         * The wizard is a place to concentrate, so the decoration stays where Figma put it.
          */}
         <div
-          className="wizard-pasta auth-parallax-lag absolute"
+          className="wizard-pasta absolute"
           style={{ left: 904.91, top: -305.14, width: 773.059, height: 696.332 }}
         >
           {WIZARD_PASTA.map((piece, i) => (
@@ -657,7 +654,7 @@ export function WizardBackdrop({ withTomatoes = true }: { withTomatoes?: boolean
 
         {withTomatoes && (
           <div
-            className="wizard-tomatoes auth-parallax-lead absolute"
+            className="wizard-tomatoes absolute"
             style={{ left: -129.22, bottom: -70.24, width: 470.728, height: 402.236 }}
           >
             {WIZARD_TOMATOES.map((piece, i) => (

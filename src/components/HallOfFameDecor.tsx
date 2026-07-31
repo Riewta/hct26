@@ -179,9 +179,20 @@ const PAN_PLATE: Piece = {
  * warmth — Figma's "Decoration / Circle" (a #D79A4E blob at 10% under a 400 blur) and the
  * pasta bowl that all but leaves the canvas on the left.
  */
+/*
+ * Both props below used to be `hidden lg:*`, which left a phone's hall-of-fame hero with
+ * nothing but the warm circle — the pan ring and the pasta bowl, the two things that make
+ * this masthead this masthead, were simply absent. They are drawn at every width now, as
+ * `.decor-stage`s: the art keeps its Figma geometry and the whole group is scaled by
+ * `--decor-fit` (100vw/1440, capped at 1, see styles/pasta-motion.css) from the corner it
+ * is pinned by. The *anchor* is scaled by the same factor in a `calc()` — a stage's own
+ * `top`/`left`/`right` sit outside its own transform, so scaling the box alone would leave
+ * it hanging off the wrong place; `right: calc(-314px * fit)` is what keeps the ring's centre
+ * at 92% of the viewport at 390 exactly as it is at 1440.
+ */
 export function HallOfFameHeroDecor() {
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
+    <div aria-hidden className="decor-fit pointer-events-none absolute inset-0 z-0">
       {/*
        * The blur reaches ~800 past the shape on every side, so this layer is deliberately
        * left unclipped: cutting it at the section edge would show the fade as a hard line.
@@ -196,7 +207,13 @@ export function HallOfFameHeroDecor() {
         </div>
       </div>
 
-      <div className="absolute top-[770.02px] left-[-521.93px] hidden h-[425.721px] w-[535.735px] items-center justify-center lg:flex">
+      <div
+        className="decor-stage absolute flex h-[425.721px] w-[535.735px] origin-top-left items-center justify-center"
+        style={{
+          top: 'calc(770.02px * var(--decor-fit))',
+          left: 'calc(-521.93px * var(--decor-fit))',
+        }}
+      >
         <div className="h-[366.451px] w-[493.487px] flex-none rotate-[7.24deg]">
           <div className="relative size-full overflow-hidden">
             <img
@@ -212,7 +229,13 @@ export function HallOfFameHeroDecor() {
        * Figma's "Pan" frame is 1754 wide against a 1440 canvas, i.e. 314 of it hangs off
        * the right edge — anchoring by that overhang keeps the ring in place at any width.
        */}
-      <div className="absolute top-[48px] right-[-314px] hidden h-[1115px] w-[1754px] lg:block">
+      <div
+        className="decor-stage absolute h-[1115px] w-[1754px] origin-top-right"
+        style={{
+          top: 'calc(48px * var(--decor-fit))',
+          right: 'calc(-314px * var(--decor-fit))',
+        }}
+      >
         {/*
          * The plate stays put. It is a single soft #BCBCBC blob, not a ring, and its own
          * centre (1379.5, 393) is 50px off the ring's — turning it would swing the plate

@@ -72,6 +72,23 @@
   --fl: clamp(0px, calc((100vw - 375px) / 1065), 1px);
   --flv: clamp(0px, calc((100vw - 375px) / 649), 1px);
 
+  /*
+   * A third ramp for the decoration fields was tried here and REVERTED — leaving the note,
+   * because the reasoning that rejects it is not obvious and the idea will occur again.
+   *
+   * Several pads below are not rhythm: they are the empty field a decoration is painted
+   * into. `sec-calendar`'s 451.5 of bottom pad is the garlic-and-fork field, `sec-scope`'s
+   * 197 the tomatoes and pots, `sec-hall-hero`'s 286.6 the ring. While those canvases were
+   * `hidden lg:block` the pad below `lg` reserved space for art that was never drawn, which
+   * at 768 left 343px of blank white between the last timeline card and the "02" heading.
+   *
+   * The fix is not to close the field: it is to draw the art, which HomeBackground now does
+   * below `lg` by hanging each group at the FRACTION of the section Figma puts it at. That
+   * makes the field load-bearing at every width — closing it does not remove a hole, it
+   * moves the garlic and the cutlery on top of the timeline cards. So every pad here stays
+   * on `--flv`, and a section's proportions stay Figma's at every width.
+   */
+
   /* Content gutter. 20 at 375 → 120 at 1440, where it meets the 1200 column that
      `max-w-[1200px]` caps: 120 + 1200 + 120 = the 1440 frame exactly. The old
      `px-4 lg:px-15` only ever reached 60, so between 1024 and 1440 the full-size
@@ -185,7 +202,35 @@
    The dashboard and the 404 were transcribed with no `lg:` pair at all — a single
    hard px that rendered at full desktop size on a 375 phone. Each utility is named
    for its Figma value and ramps up to it, so `text-[24px]` becomes `fl-24` and the
-   1440 render is byte-identical while every width below it steps down. */
+   1440 render is byte-identical while every width below it steps down.
+
+   The five small ranks now carry a FLOOR, written as `max(floor, ramp)`. Ramping a 12px
+   Figma caption down to 11 and a 14px label down to 13 was the wrong direction: those two
+   ranks sit at the bottom of what is legible, and on /my-team they are the label above
+   every value in the form — so the screen made almost entirely of small type was the one
+   carrying the smallest type on the site.
+
+   `max()` and not a re-based `calc()` on purpose. The desktop footer is frozen from `lg`
+   up and it uses `fl-16` and `fl-18`, so a new MIN/DELTA pair would have had to reproduce
+   the old value at every width from 1024 to 1440, not just at 1440. `max(floor, old-ramp)`
+   is *exactly* the old ramp everywhere the old ramp is already above the floor — it can
+   only ever lift the narrow end. The crossover widths are 641 (fl-20), 730 (fl-18) and 907
+   (fl-16), all well below `lg`, so nothing at or above 1024 moves by so much as a
+   hundredth of a pixel. fl-14 and fl-12 cross over only at 1440, so in practice they hold
+   flat at their Figma value, which is what those two ranks want.
+
+   The ordering property survives trivially: `max` of two strictly ordered quantities is
+   strictly ordered, and both the floors (17 > 16 > 15 > 14 > 12) and the ramps they replace
+   were already strictly ordered at every width.
+
+     rank     375   1024   1440
+     fl-40     28   35.3     40
+     fl-24     20  22.44     24
+     fl-20     17  18.44     20
+     fl-18     16  16.83     18
+     fl-16     15  15.22     16
+     fl-14     14     14     14
+     fl-12     12     12     12                                                        */
 @utility fl-40 {
   font-size: calc(28px + 12 * var(--fl)); /* 28 → 40 */
 }
@@ -193,19 +238,19 @@
   font-size: calc(20px + 4 * var(--fl)); /* 20 → 24 */
 }
 @utility fl-20 {
-  font-size: calc(16px + 4 * var(--fl)); /* 16 → 20 */
+  font-size: max(17px, calc(16px + 4 * var(--fl))); /* 17 → 20, crossover 641 */
 }
 @utility fl-18 {
-  font-size: calc(15px + 3 * var(--fl)); /* 15 → 18 */
+  font-size: max(16px, calc(15px + 3 * var(--fl))); /* 16 → 18, crossover 730 */
 }
 @utility fl-16 {
-  font-size: calc(14px + 2 * var(--fl)); /* 14 → 16 */
+  font-size: max(15px, calc(14px + 2 * var(--fl))); /* 15 → 16, crossover 907 */
 }
 @utility fl-14 {
-  font-size: calc(13px + 1 * var(--fl)); /* 13 → 14 */
+  font-size: max(14px, calc(13px + 1 * var(--fl))); /* Figma's own 14, held */
 }
 @utility fl-12 {
-  font-size: calc(11px + 1 * var(--fl)); /* 11 → 12 */
+  font-size: max(12px, calc(11px + 1 * var(--fl))); /* likewise 12 */
 }
 
 /* The dashboard's own column: Figma insets a 1240 content block by 100 in the 1440
@@ -230,7 +275,7 @@
 
 @utility sec-calendar {
   padding-top: calc(80px + 8.5 * var(--flv)); /* → 88.5 */
-  padding-bottom: calc(96px + 355.5 * var(--flv)); /* → 451.5, the garlic/fork tail */
+  padding-bottom: calc(96px + 355.5 * var(--flv)); /* → 451.5, the garlic/fork field */
 }
 
 @utility sec-steps {
@@ -312,9 +357,21 @@
 
 html {
   scroll-behavior: smooth;
-  /* decorations bleed past the viewport edge; clip on the document, not a wrapper,
-     so the page itself stays the scroll container */
-  overflow-x: hidden;
+  /*
+   * Decorations bleed past the viewport edge, so the document has to clip them — but
+   * `overflow-x: hidden` is the wrong primitive for that. `hidden` makes the element a
+   * scroll *container* whose overflow is merely not shown: the box is still scrollable
+   * programmatically and, on a touch device, by dragging. That is exactly the bug — the
+   * page could be panned sideways onto empty space in Chrome's device mode even though
+   * `window.scrollX` read 0 afterwards, because the pan snapped back.
+   *
+   * `overflow-x: clip` clips without creating a scroll container, so there is no
+   * scrollport to pan and `scrollWidth` collapses to `clientWidth`. `overflow-y` stays
+   * `visible` (clip is one of the two values allowed to pair with visible), so the
+   * document keeps being the vertical scroll container and `scroll-behavior` above,
+   * `position: sticky` and scroll anchoring all keep working.
+   */
+  overflow-x: clip;
 }
 
 body {

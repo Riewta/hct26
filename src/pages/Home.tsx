@@ -21,7 +21,31 @@ export default function Home() {
      * height-independently, where tuning Prizes' bottom margin would re-break the moment any
      * section's height moved.
      */
-    <div className="relative isolate lg:min-h-[5178px]">
+    /*
+     * `overflow-x-clip` and not `overflow-x-hidden`, and here rather than only on <html>.
+     * Two separate reasons:
+     *
+     *   - `clip` clips without making the box a scroll container, so nothing inside can be
+     *     panned sideways. `hidden` would create a scrollport that a touch drag can move.
+     *   - the clip has to be *inside* the document, not on it. Under mobile emulation Chrome
+     *     grows the layout viewport to cover any horizontal overflow, so a decoration hanging
+     *     80px off the right edge made the ICB 80px wider than the screen — which is what let
+     *     the page be dragged sideways onto empty white, and what pushed the fixed navbar
+     *     (`inset-x-0`, so ICB-wide) out of the screen's centre. Clipping at the page box
+     *     stops the overflow ever reaching the viewport, so the ICB stays exactly 100vw.
+     *
+     * `overflow-y` stays `visible` — clip is the one non-visible value allowed to pair with
+     * it — so the closing artwork still hangs below its section as the design has it.
+     */
+    /*
+     * `pb-[17.5vw]` is the gap the closing band needs to clear the footer, and it has to be
+     * padding HERE rather than a margin on Prizes: the canvas is `inset-0` on this box, and a
+     * child's bottom margin falls outside it, so the band's bottom edge stopped at the last
+     * section instead of at the footer and the gap rendered plain white. 17.5vw is 251.5/1440,
+     * the distance from the red blob's bottom to the Figma frame's bottom edge. From `lg` up
+     * `min-h` binds instead and Prizes carries Figma's own 247px margin.
+     */
+    <div className="relative isolate overflow-x-clip pb-[17.5vw] lg:pb-0 lg:min-h-[5178px]">
       <HomeBackground />
       <Hero />
       <Calendar />

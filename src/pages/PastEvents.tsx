@@ -12,11 +12,17 @@ export default function PastEvents() {
   const cards = useReveal({ group: true })
 
   return (
-    <>
+    /*
+     * The page's own clip box. `overflow-x-clip` — see the long note on the same class in
+     * Home.tsx: this page carried by far the worst overhang of the three (a rotated ring
+     * reaching x = 1594 on a 390 screen), which grew Chrome's mobile layout viewport to
+     * 1594 and made the whole site draggable sideways over 1200px of white.
+     */
+    <div className="overflow-x-clip">
       {/*
-       * No `overflow-hidden` here on purpose: the warm circle behind the hero is a 400px
-       * blur that reaches well past the section, and clipping it shows the fade as a seam.
-       * Sideways bleed is already clipped on <html>.
+       * No `overflow-hidden` on the sections themselves, on purpose: the warm circle behind
+       * the hero is a 400px blur that reaches well past the section, and clipping it there
+       * shows the fade as a seam. Only the sideways bleed is clipped, and only at the page box.
        */}
       <section id="hall-of-fame" className="shell sec-hall-hero relative">
         <HallOfFameHeroDecor />
@@ -70,6 +76,6 @@ export default function PastEvents() {
       </section>
 
       <HallOfFameWaveBand />
-    </>
+    </div>
   )
 }

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import GoogleLogo from '../GoogleLogo'
 import { WizardBackdrop } from '../AuthBackdrop'
 import ScrollEdgeEffect from '../ScrollEdgeEffect'
-import { useAuthLink } from './wizardNav'
+import { authLink, useAuthBackLink } from './wizardNav'
 
 export const TOTAL_STEPS = 5
 
@@ -160,7 +160,12 @@ export default function WizardShell({
        * account chip out at scroll 0, before anything had even scrolled under them. What
        * the effect is for is the decorative backdrop passing beneath the chrome.
        */}
-      <ScrollEdgeEffect className="fixed inset-x-0 top-0 z-0 h-[160px]" />
+      {/*
+       * Height tracks the top bar it softens — 114px at 375 up to Figma's 160 at 1440. Held at
+       * a flat 160 it overhung the bar by 46px on a phone and the ramp's tail ended on a hard
+       * line across the form below.
+       */}
+      <ScrollEdgeEffect className="fixed inset-x-0 top-0 z-0 h-[calc(114px_+_46*var(--fl))]" />
 
       {overlay}
     </div>
@@ -176,10 +181,10 @@ const STEP_BUTTON =
   'flex items-center justify-center gap-3 rounded-[12px] bg-brand-red py-4 text-lg leading-[1.4] font-medium text-white transition-[opacity,transform] duration-[160ms] ease-out hover:opacity-90 active:scale-[0.97] motion-reduce:active:scale-100 lg:text-xl'
 
 export function BackButton({ to }: { to: string }) {
-  const authLink = useAuthLink()
+  const authBack = useAuthBackLink()
 
   return (
-    <Link {...authLink(to, 'back')} className={`${STEP_BUTTON} pr-6 pl-4`}>
+    <Link {...authBack(to, 'back')} className={`${STEP_BUTTON} pr-6 pl-4`}>
       <img
         src="/assets/figma/41418d29fd1f773c0f14bc317b19bd65b6f49ee8.svg"
         alt=""
@@ -192,8 +197,6 @@ export function BackButton({ to }: { to: string }) {
 }
 
 export function NextButton({ to, label = 'ถัดไป' }: { to: string; label?: string }) {
-  const authLink = useAuthLink()
-
   return (
     <Link {...authLink(to, 'forward')} className={`${STEP_BUTTON} ml-auto pr-4 pl-6`}>
       {label}
@@ -213,8 +216,6 @@ export function NextButton({ to, label = 'ถัดไป' }: { to: string; labe
  * back out and the colour blocks have to return (styles/auth-motion.css).
  */
 export function SubmitButton({ to, label }: { to: string; label: string }) {
-  const authLink = useAuthLink()
-
   return (
     <Link {...authLink(to, 'submit')} className={`${STEP_BUTTON} ml-auto px-6`}>
       {label}

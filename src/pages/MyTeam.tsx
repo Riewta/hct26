@@ -119,7 +119,12 @@ export default function MyTeam() {
       <TeamDecor />
 
       {/* Figma 708:2306 — the progressive blur band that fades the pasta out under the nav */}
-      <ScrollEdgeEffect className="absolute inset-x-0 top-0 z-10 h-40" />
+      {/*
+       * The band matches the chrome it softens — 106px at 375 up to Figma's 160 at 1440 —
+       * rather than staying 160 everywhere. A flat 160 over a 106px header put 54px of ramp
+       * tail on the content below it, ending on a line, which is the grey slab over the cards.
+       */}
+      <ScrollEdgeEffect className="absolute inset-x-0 top-0 z-10 h-[calc(106px_+_54*var(--fl))]" />
 
       {/* Figma 708:2307: a 1440 frame padded 100 either side, 60 down, 40 between the rows */}
       <div className="shell-dash relative z-20 mx-auto flex w-full max-w-[1440px] flex-col items-center gap-[calc(24px_+_16*var(--fl))] pt-[calc(24px_+_36*var(--fl))] pb-16">

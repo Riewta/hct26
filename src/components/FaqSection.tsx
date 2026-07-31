@@ -108,7 +108,19 @@ export default function FaqSection() {
       {/* Decoration / Star — Figma draws the mascot over the section, cropped by its box */}
       <div
         aria-hidden
-        className="pointer-events-none absolute top-[263px] left-[-72px] z-20 hidden h-[693px] w-[853px] overflow-hidden lg:block"
+        /*
+         * `decor-fit decor-stage` instead of `hidden lg:block` — the mascot was one of the
+         * pieces missing from the phone page.
+         *
+         * Below `lg` it is anchored to the section's top-RIGHT rather than to Figma's page
+         * coordinate. Scaling Figma's own pin (263, -72) about the top-left lands the star
+         * squarely on top of "คำถามที่พบบ่อย" on a 390 screen, and a decoration over a section
+         * heading is worse than no decoration. On the right it clears the single-column text
+         * entirely: the questions are left-aligned and their measure stops well short of the
+         * edge, which is the same relationship the desktop pin has to the two-column layout.
+         * From `lg` up the Figma pin is restored exactly.
+         */
+        className="decor-fit decor-stage pointer-events-none absolute top-0 right-[-6%] z-20 h-[693px] w-[853px] origin-top-right overflow-hidden lg:top-[263px] lg:right-auto lg:left-[-72px] lg:origin-top-left"
       >
         <img
           src="/assets/figma/15683452949f0984de16e5631de71122be94c4ff.png"

@@ -46,12 +46,25 @@ export default function ScopeSection() {
           ref={cards.ref}
           className={`grid gap-[calc(24px_+_16*var(--fl))] md:grid-cols-2 lg:grid-cols-3 ${cards.cls}`}
         >
-          {SCOPE_CARDS.map((card) => (
+          {SCOPE_CARDS.map((card, i) => (
             <article
               key={card.title}
               /* these carry a "go" arrow in their footer, so they read as reachable —
-                 the lift is what confirms it before anything is wired up */
-              className="mm-lift relative overflow-hidden rounded-2xl bg-white shadow-soft lg:h-[451px]"
+                 the lift is what confirms it before anything is wired up
+
+                 There are three cards and the middle band is two columns wide, so the third
+                 sat alone in the left half of a row with 430px of nothing beside it. It is
+                 given both columns and half their width instead, which centres it and turns
+                 the row into a deliberate 2-over-1 rather than an orphan. Three columns would
+                 have been the other way out, but ScopeCardArt is pinned in absolute px
+                 against Figma's 373-wide card, so a 198-wide card would show only the left
+                 half of each doodle band — two-up at 768 is 315, which is close to the
+                 width the art is drawn for. */
+              className={`mm-lift relative overflow-hidden rounded-2xl bg-white shadow-soft lg:h-[451px] ${
+                i === SCOPE_CARDS.length - 1
+                  ? 'md:col-span-2 md:mx-auto md:w-[calc(50%_-_(12px_+_8*var(--fl)))] lg:col-span-1 lg:mx-0 lg:w-auto'
+                  : ''
+              }`}
             >
               <ScopeCardArt items={card.art} outlines={card.outlines} />
               {/* Figma reserves 201 above the folder for the topic's doodle band */}
