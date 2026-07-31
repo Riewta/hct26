@@ -282,14 +282,18 @@ const FLOW = new Map<DecorNode, CSSProperties>(
   PROPS.filter((n) => n.crop === RIGATONI).map((n, i) => [n, flowVars(i, n.x)]),
 )
 
-export default function HomeBackground() {
-  /*
-   * 'rest' is the Figma composition and the only state the markup can be rendered in
-   * without JS; 'armed' parks the pieces at the flight's first frame (set in a layout
-   * effect, so it lands before the browser paints and there is nothing to see jump); the
-   * observer then moves to 'run' the first time the band is on screen. Under reduced
-   * motion nothing arms, so the whole thing is a no-op and the pile is simply drawn.
-   */
+/*
+ * 'rest' is the Figma composition and the only state the markup can be rendered in
+ * without JS; 'armed' parks the pieces at the flight's first frame (set in a layout
+ * effect, so it lands before the browser paints and there is nothing to see jump); the
+ * observer then moves to 'run' the first time the band is on screen. Under reduced motion
+ * nothing arms, so the whole thing is a no-op and the pile is simply drawn.
+ *
+ * Shared by the desktop canvas and the narrow-viewport band below, which each observe
+ * their own sentinel — the two bands are at different places on the page and neither
+ * should start because the other scrolled in.
+ */
+function useFlowPhase() {
   const [phase, setPhase] = useState<'rest' | 'armed' | 'run'>('rest')
   const band = useRef<HTMLDivElement>(null)
 
@@ -312,6 +316,11 @@ export default function HomeBackground() {
   }, [])
 
   const flowClass = phase === 'run' ? 'pasta-flow' : phase === 'armed' ? 'pasta-flow-armed' : ''
+  return { band, flowClass }
+}
+
+export default function HomeBackground() {
+  const { band, flowClass } = useFlowPhase()
 
   return (
     <div
@@ -354,5 +363,174 @@ export default function HomeBackground() {
         })}
       </div>
     </div>
+  )
+}
+
+/*
+ * Below `lg` the canvas above is hidden, and hiding it left the narrow layouts bare: at
+ * 375 the homepage had ~180px of empty white between the nav and the wordmark and ~240px
+ * between the CTA and the calendar header — exactly the two places the 1440 design fills
+ * with pasta. Figma has no spec under 1440, so this is a stated policy rather than a
+ * transcription, and it is deliberately NOT the desktop canvas rescaled: that canvas is
+ * anchored to page coordinates while narrow content reflows to a different height, so any
+ * uniform scale walks the props away from the content they belong to. These two bands are
+ * anchored to the hero section instead, and every number below is a fraction of the band's
+ * own width, so the arrangement holds its shape from 320 up to the `lg` handover.
+ *
+ * The art is the same two sprite sheets the desktop rows use, at the same crops, so the
+ * pieces are the same objects at a size that suits the viewport.
+ */
+type MobilePiece = {
+  /** all four in % of the band's width, except `t` which is % of its height */
+  l: number
+  t: number
+  w: number
+  /** the piece's own box ratio; both sprites are drawn at their art box's aspect */
+  ratio: number
+  rot: number
+  crop: Crop
+  src: string
+}
+
+const TUBE_RATIO = 597 / 443
+const RIGATONI_RATIO = 281.184 / 325.005
+
+/*
+ * The masthead crowd: three tubes into each side of the wordmark, bleeding off both edges.
+ * Unlike the 1440 rows these do not bleed off the *top* — up there the fixed nav pill sits
+ * over the first 92px of the page and simply covered them, so the cluster starts below it
+ * and fills the gap between the nav and the wordmark instead.
+ */
+// prettier-ignore
+const MOBILE_TOP: MobilePiece[] = [
+  { l: -24, t:  0, w: 46, ratio: TUBE_RATIO, rot:   10, crop: TUBE, src: pasta1 },
+  { l:   2, t: 14, w: 34, ratio: TUBE_RATIO, rot:   64, crop: TUBE, src: pasta1 },
+  { l: -14, t: 34, w: 30, ratio: TUBE_RATIO, rot:  -36, crop: TUBE, src: pasta1 },
+  { l:  78, t:  2, w: 44, ratio: TUBE_RATIO, rot:   82, crop: TUBE, src: pasta1 },
+  { l:  60, t: 18, w: 30, ratio: TUBE_RATIO, rot:  137, crop: TUBE, src: pasta1 },
+  { l:  86, t: 38, w: 32, ratio: TUBE_RATIO, rot:   36, crop: TUBE, src: pasta1 },
+]
+
+/**
+ * The rigatoni band, in the same reading as the desktop rows: loose on the left, packing
+ * into a pile on the right. Ordered left to right so the shared `flowVars` stagger — which
+ * keys off the index — also runs left to right.
+ */
+// prettier-ignore
+const MOBILE_BAND: MobilePiece[] = [
+  { l:  -8, t: 28, w: 22, ratio: RIGATONI_RATIO, rot: -11, crop: RIGATONI, src: pasta24 },
+  { l:  10, t: 48, w: 17, ratio: RIGATONI_RATIO, rot:  75, crop: RIGATONI, src: pasta24 },
+  { l:  28, t: 20, w: 19, ratio: RIGATONI_RATIO, rot:  19, crop: RIGATONI, src: pasta24 },
+  { l:  42, t: 44, w: 16, ratio: RIGATONI_RATIO, rot: -13, crop: RIGATONI, src: pasta24 },
+  { l:  56, t: 14, w: 24, ratio: RIGATONI_RATIO, rot:  23, crop: RIGATONI, src: pasta24 },
+  { l:  67, t: 42, w: 21, ratio: RIGATONI_RATIO, rot: -54, crop: RIGATONI, src: pasta24 },
+  { l:  79, t: 18, w: 26, ratio: RIGATONI_RATIO, rot:  11, crop: RIGATONI, src: pasta24 },
+  { l:  88, t: 46, w: 20, ratio: RIGATONI_RATIO, rot: -31, crop: RIGATONI, src: pasta24 },
+]
+
+/*
+ * `scale` is how much smaller the pieces are drawn than the <md table states. A tablet is
+ * twice as wide as a phone, and `w` is a fraction of the band's width, so at 1:1 the same
+ * composition comes out at twice the size and the tubes crowd the CTA instead of framing
+ * it. Only the two end pieces of a band bleed off an edge; those keep their bleed in
+ * proportion to their own (now smaller) size by mirroring the scale about that edge, while
+ * everything in between stays where the table puts it — otherwise scaling the whole row
+ * inward would open a hole down the middle of a band that is meant to read left to right.
+ */
+function left(p: MobilePiece, scale: number) {
+  if (p.l < 0) return p.l * scale
+  if (p.l + p.w > 100) return 100 - (100 - p.l) * scale
+  return p.l
+}
+
+function MobileBand({
+  pieces,
+  className,
+  scale,
+  flowClass,
+}: {
+  pieces: MobilePiece[]
+  className: string
+  scale: number
+  /** present only for the band that flows; the corners are static, as they are at 1440 */
+  flowClass?: string
+}) {
+  return (
+    <div aria-hidden className={`pointer-events-none absolute -z-10 ${className}`}>
+      {pieces.map((p, i) => (
+        <div
+          key={i}
+          className={`absolute ${flowClass ?? ''}`}
+          style={{
+            left: `${left(p, scale)}%`,
+            top: `${p.t}%`,
+            width: `${p.w * scale}%`,
+            aspectRatio: p.ratio,
+            transform: `rotate(${p.rot}deg)`,
+            // `l` maps the piece onto the 1440 canvas's x axis, so the nudge direction and
+            // the stagger come from the same function the desktop band uses.
+            ...(flowClass ? flowVars(i, p.l * 14.4) : {}),
+          }}
+        >
+          <div className="relative size-full overflow-hidden">
+            <img
+              src={p.src}
+              alt=""
+              className="absolute max-w-none"
+              style={{
+                width: `${p.crop[0]}%`,
+                height: `${p.crop[1]}%`,
+                left: `${p.crop[2]}%`,
+                top: `${p.crop[3]}%`,
+              }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export function HeroMobileDecor() {
+  const phone = useFlowPhase()
+  const tablet = useFlowPhase()
+
+  return (
+    <>
+      {/* Two copies rather than one with a CSS variable: the bleed correction in `left()`
+          has to be computed per scale, and a media query cannot reach into it. */}
+      <div className="md:hidden">
+        <MobileBand
+          pieces={MOBILE_TOP}
+          scale={1}
+          className="inset-x-0 top-[92px] aspect-[375/170]"
+        />
+        {/* the flow's sentinel is the band's own box, which is one node rather than 20 */}
+        <div ref={phone.band} className="absolute inset-x-0 bottom-0 aspect-[375/160]">
+          <MobileBand
+            pieces={MOBILE_BAND}
+            scale={1}
+            className="inset-0 h-full"
+            flowClass={phone.flowClass}
+          />
+        </div>
+      </div>
+
+      <div className="hidden md:block lg:hidden">
+        <MobileBand
+          pieces={MOBILE_TOP}
+          scale={0.56}
+          className="inset-x-0 top-[92px] aspect-[768/210]"
+        />
+        <div ref={tablet.band} className="absolute inset-x-0 bottom-0 aspect-[768/190]">
+          <MobileBand
+            pieces={MOBILE_BAND}
+            scale={0.56}
+            className="inset-0 h-full"
+            flowClass={tablet.flowClass}
+          />
+        </div>
+      </div>
+    </>
   )
 }

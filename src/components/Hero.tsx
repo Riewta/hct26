@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { HeroMobileDecor } from './HomeBackground'
 import { HERO_LINES } from '../data'
 import { useReveal } from '../hooks/useReveal'
 
@@ -66,6 +67,9 @@ export default function Hero() {
     // Figma runs the pasta past every edge of the masthead, so this section must not clip;
     // the 379 tail below the CTA is the run-up to the calendar section.
     <section id="hero" className="relative px-4 pt-32 pb-40 lg:px-15 lg:pt-[183px] lg:pb-[379px]">
+      {/* Narrow viewports only — the 1440 canvas is hidden there. See HomeBackground. */}
+      <HeroMobileDecor />
+
       <div
         ref={content.ref}
         className={`relative z-10 mx-auto flex w-full max-w-[1200px] flex-col items-center text-center ${content.cls}`}
