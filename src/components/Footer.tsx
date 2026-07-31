@@ -3,7 +3,13 @@ import { FOOTER_ABOUT, FOOTER_GROUPS, SOCIAL_LINKS } from '../data'
 
 export default function Footer() {
   return (
-    <footer className="rounded-3xl bg-white px-4 pt-15 pb-25 lg:px-15">
+    /*
+     * The prizes section's props are absolutely positioned, so they paint over this
+     * static block no matter their z-index — the cheese pile and the cream wave both
+     * hang past the red band and were landing on the footer copy. Figma stacks the
+     * cheese last, but keeping the text legible wins: the footer takes its own layer.
+     */
+    <footer className="relative z-30 rounded-3xl bg-white px-4 pt-15 pb-25 lg:px-15">
       <div className="mx-auto flex max-w-[1320px] flex-col gap-8 lg:flex-row lg:justify-between">
         <div className="flex max-w-[600px] flex-col justify-between gap-8">
           <div className="flex flex-col gap-5">

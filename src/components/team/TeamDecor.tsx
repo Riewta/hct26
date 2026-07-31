@@ -52,7 +52,7 @@ export default function TeamDecor() {
       className="pointer-events-none absolute inset-0 z-0 hidden overflow-hidden lg:block"
     >
       {/* Figma authors these against a 1440 canvas, so the stage keeps that width and centres */}
-      <div className="absolute top-0 left-1/2 h-[1024px] w-[1440px] -translate-x-1/2">
+      <div className="decor-canvas absolute top-0 h-[1024px]">
         <div className="absolute top-0 left-0 h-[509px] w-[1440px] overflow-hidden">
           {PASTAS.map(([w, h, left, top, rotate, iw, ih], i) => (
             <div
@@ -60,7 +60,7 @@ export default function TeamDecor() {
               className="absolute flex items-center justify-center"
               style={{ width: w, height: h, left, top }}
             >
-              <div className="flex-none" style={{ transform: `rotate(${rotate}deg)` }}>
+              <div className="decor-art flex-none" style={{ transform: `rotate(${rotate}deg)` }}>
                 <div className="relative overflow-hidden" style={{ width: iw, height: ih }}>
                   <img
                     src={PASTA}
@@ -83,7 +83,7 @@ export default function TeamDecor() {
                   style={{ left, top, width: box, height: box }}
                 >
                   <div
-                    className="flex-none"
+                    className="decor-art flex-none"
                     style={{ transform: `scaleY(-1) rotate(${rotate}deg)` }}
                   >
                     <div className="relative" style={{ width: img, height: img }}>

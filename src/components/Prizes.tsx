@@ -13,7 +13,14 @@ export default function Prizes() {
   const grid = useReveal({ group: true })
 
   return (
-    // Figma: 165.5 of red above the header and below the grid.
+    /*
+     * Figma: 165.5 of red above the header and below the grid.
+     *
+     * The bottom margin is the run-out for the props: the noodle swirl and the cheese pile
+     * are pinned well below the section box (to y 5178 against its 1024), so without it the
+     * footer starts at 4821 and covers the last 357 of them. Margin rather than padding —
+     * the red band is centred on the section, so growing the box would move the band.
+     */
     <section
       id="prizes"
       /*
@@ -24,6 +31,7 @@ export default function Prizes() {
        * props are hidden and the gap would just be dead space.
        */
       className="relative bg-brand-red px-4 py-20 lg:mb-[248px] lg:bg-transparent lg:px-15 lg:py-[165.5px]"
+      className="relative bg-brand-red px-4 py-20 lg:mb-[357px] lg:bg-transparent lg:px-15 lg:py-[165.5px]"
     >
       <HomeDecor nodes={PRIZES_DECOR} className="z-0" />
 

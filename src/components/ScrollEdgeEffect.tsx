@@ -37,14 +37,33 @@ export default function ScrollEdgeEffect({
   /** Alpha at the mask's solid end. */
   maskAlpha?: number
 }) {
-  const mask = `linear-gradient(${flip ? 'to top' : 'to bottom'}, rgba(0,0,0,${maskAlpha}) 0%, rgba(0,0,0,0) 100%)`
+  /*
+   * A straight alpha ramp still lands on a visible line: the blur radius holds steady the
+   * whole way down and only the opacity falls, so the eye catches where it stops. These
+   * stops ease the tail out instead, spending most of the band near full strength and then
+   * dropping away quickly over the last fifth.
+   */
+  const a = (f: number) => `rgba(0,0,0,${(maskAlpha * f).toFixed(3)})`
+  const mask =
+    `linear-gradient(${flip ? 'to top' : 'to bottom'}, ` +
+    `${a(1)} 0%, ${a(0.94)} 25%, ${a(0.78)} 45%, ${a(0.5)} 65%, ${a(0.22)} 82%, ${a(0)} 100%)`
 
   return (
-    <div
-      aria-hidden
-      className={`pointer-events-none ${className}`}
-      style={{ backdropFilter: `blur(${blur}px)`, WebkitBackdropFilter: `blur(${blur}px)` }}
-    >
+    <div aria-hidden className={`pointer-events-none ${className}`}>
+      {/*
+       * The light pass carries the same mask as the plate. Left unmasked — as it was — the
+       * blur covers the band evenly and then cuts off dead straight at the bottom edge,
+       * which is the hard line this effect exists to avoid.
+       */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backdropFilter: `blur(${blur}px)`,
+          WebkitBackdropFilter: `blur(${blur}px)`,
+          maskImage: mask,
+          WebkitMaskImage: mask,
+        }}
+      />
       <div
         className={`absolute inset-0 ${PLATE[tone]}`}
         style={{

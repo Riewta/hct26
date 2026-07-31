@@ -81,7 +81,7 @@ function Node({ n }: { n: DecorNode }) {
   return (
     <div className="absolute flex items-center justify-center" style={frame}>
       {/* `relative` so a blurred export's bleed is measured from the art box, not the bbox */}
-      <div className="relative shrink-0" style={{ width: aw, height: ah, transform }}>
+      <div className="decor-art relative shrink-0" style={{ width: aw, height: ah, transform }}>
         {n.crop ? (
           <div className="relative size-full overflow-hidden">
             <img
@@ -138,6 +138,7 @@ export default function HomeDecor({
       className={`pointer-events-none absolute top-0 left-1/2 h-full w-[1440px] -translate-x-1/2 ${
         variant === 'props' ? 'hidden lg:block' : ''
       } ${className}`}
+      className={`decor-canvas pointer-events-none absolute top-0 h-full ${className}`}
     >
       {nodes.map((n, i) => (
         <Node key={i} n={n} />
