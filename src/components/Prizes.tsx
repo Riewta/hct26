@@ -23,6 +23,14 @@ export default function Prizes() {
      */
     <section
       id="prizes"
+      /*
+       * Figma leaves 248 of page between this section's end (4820) and the footer (5068);
+       * the wave-and-cheese band lives in that gap, with only its tips riding under the
+       * footer card. Without the margin the footer starts at 4821 and buries the band,
+       * which is what made it read as oversized. lg-only, because below lg the band's
+       * props are hidden and the gap would just be dead space.
+       */
+      className="relative bg-brand-red px-4 py-20 lg:mb-[248px] lg:bg-transparent lg:px-15 lg:py-[165.5px]"
       className="relative bg-brand-red px-4 py-20 lg:mb-[357px] lg:bg-transparent lg:px-15 lg:py-[165.5px]"
     >
       <HomeDecor nodes={PRIZES_DECOR} className="z-0" />

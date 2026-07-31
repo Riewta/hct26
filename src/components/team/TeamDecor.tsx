@@ -47,7 +47,10 @@ const TOMATOES: [number, number, number, number, number][] = [
  */
 export default function TeamDecor() {
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 z-0 hidden overflow-hidden lg:block"
+    >
       {/* Figma authors these against a 1440 canvas, so the stage keeps that width and centres */}
       <div className="decor-canvas absolute top-0 h-[1024px]">
         <div className="absolute top-0 left-0 h-[509px] w-[1440px] overflow-hidden">

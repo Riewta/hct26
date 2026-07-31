@@ -107,7 +107,7 @@ export default function Hero() {
 
         <Link
           to="/signin"
-          className="group mt-[38px] flex items-center gap-5 rounded-[100px] bg-brand-red py-4 pr-6 pl-10 text-lg leading-[1.4] font-bold text-white transition-opacity hover:opacity-90 lg:text-2xl"
+          className="group mt-[38px] flex items-center gap-3 rounded-[100px] bg-brand-red py-4 pr-4 pl-6 text-base leading-[1.4] font-bold text-white transition-opacity hover:opacity-90 sm:gap-5 sm:pr-6 sm:pl-10 sm:text-lg lg:text-2xl"
         >
           ลงทะเบียนเข้าร่วมการแข่งขัน
           {/* the glyph sits inside a 34px cell — Figma insets it rather than scaling it */}

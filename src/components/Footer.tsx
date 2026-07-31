@@ -1,12 +1,6 @@
 import { Link } from 'react-router-dom'
 import { FOOTER_ABOUT, FOOTER_GROUPS, SOCIAL_LINKS } from '../data'
 
-/** Figma's own exports of the two social glyphs, keyed by the label in `SOCIAL_LINKS`. */
-const SOCIAL_ICON: Record<string, string> = {
-  Facebook: '/assets/figma/5c123061e989ef51ad620866b56d6b0d63f2dc8c.svg',
-  Instagram: '/assets/figma/ec7b502700ce8ac7dfcae9fe51fa39883e998853.svg',
-}
-
 export default function Footer() {
   return (
     /*
@@ -86,12 +80,7 @@ export default function Footer() {
                       href={social.href}
                       className="flex items-center gap-2.5 text-base leading-[1.4]"
                     >
-                      <img
-                        src={SOCIAL_ICON[social.label] ?? social.icon}
-                        alt=""
-                        aria-hidden
-                        className="size-6"
-                      />
+                      <img src={social.icon} alt="" aria-hidden className="size-6" />
                       {social.label}
                     </a>
                   ))}
