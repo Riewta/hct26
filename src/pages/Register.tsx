@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import AuthPageShell from '../components/AuthPageShell'
+import { authLink, useOwnArrival } from '../components/form/wizardNav'
 import { DOCUMENT_GROUPS } from '../data'
 
 /**
@@ -32,9 +33,26 @@ const REQUIREMENTS = [
 
 /** Figma 708:1174 — the gate that lists what to bring before the wizard opens. */
 export default function Register() {
+  /*
+   * The sheet has to spring up every time the user arrives here, and it arrives two very
+   * different ways. Through the sign-in morph, the spring belongs to the transition —
+   * `::view-transition-new(auth-sheet)` is the snapshot that travels. On a direct load or a
+   * reload there is no transition at all, and the plate used to simply be there, which is
+   * what "มันยังไม่เด้งมา" reports. `auth-sheet-spring` gives the element the same spring of
+   * its own, and this test is what keeps the two from ever running at once.
+   */
+  const spring = useOwnArrival()
+
   return (
     <AuthPageShell>
-      <div className="mt-8 flex min-h-[850px] flex-1 flex-col items-start gap-8 rounded-t-[32px] bg-white p-6 shadow-soft lg:mt-[66px] lg:p-10">
+      {/*
+       * `auth-sheet` is the view-transition name that makes this card spring up over the
+       * colour blocks as they morph out of the sign-in layout, and then carries the same
+       * white plate on into the wizard's form card (styles/auth-motion.css).
+       */}
+      <div
+        className={`auth-sheet ${spring ? 'auth-sheet-spring' : ''} mt-8 flex min-h-[850px] flex-1 flex-col items-start gap-8 rounded-t-[32px] bg-white p-6 shadow-soft lg:mt-[66px] lg:p-10`}
+      >
         <h1 className="text-3xl leading-[1.4] font-semibold lg:text-[40px]">
           ลงทะเบียนเข้าแข่งขัน
         </h1>
@@ -69,9 +87,11 @@ export default function Register() {
         </div>
 
         {/* Figma sets this label in Sukhumvit Set, not Noto */}
+        {/* `enter`, not `forward`: this hop sinks the colour blocks away and spills the
+            wizard's pasta in, which no step-to-step move should do. */}
         <Link
-          to="/register/team"
-          className="flex h-15 w-full items-center justify-center rounded-[20px] bg-brand-red px-6 py-4 font-display text-lg leading-[normal] font-semibold text-white transition-opacity hover:opacity-90 lg:text-xl"
+          {...authLink('/register/team', 'enter')}
+          className="mm-press flex h-15 w-full items-center justify-center rounded-[20px] bg-brand-red px-6 py-4 font-display text-lg leading-[normal] font-semibold text-white transition-opacity hover:opacity-90 lg:text-xl"
         >
           ลงทะเบียน
         </Link>

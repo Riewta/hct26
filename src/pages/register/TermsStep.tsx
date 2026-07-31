@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import WizardShell, { BackButton, SubmitButton } from '../../components/form/WizardShell'
+import { CheckMark } from '../../components/form/Field'
 import PolicyModal from '../../components/PolicyModal'
 import { CONSENTS, REQUIRED_DOCUMENTS } from '../../registrationData'
-
-const CHECK = '/assets/figma/b197d7a72e66b1f0f4433b649b5ff939426e30c3.svg'
 
 /**
  * Figma 708:1952. Two groups of rounded-16 rows: mandatory documents that open a modal,
@@ -44,9 +43,18 @@ function Row({
   )
 }
 
-/** Radio pair styled as the design's 24 check boxes — unchecked is an empty outline. */
+/**
+ * Radio pair styled as the design's 24 check boxes — unchecked is an empty outline.
+ *
+ * `touched` is what stops the tick drawing itself for a default nobody chose. The row arrives
+ * with ยอมรับ pre-selected, so on entry every consent row used to draw its tick at once,
+ * unstaggered, over the incoming step transition — the one animation in the flow whose stated
+ * job is to say "you decided", firing on page load. It is now set from the change handler, so
+ * the tick is simply *there* on arrival and travels only for a real choice. No timing changed.
+ */
 function ConsentChoice({ name }: { name: string }) {
   const [value, setValue] = useState<'yes' | 'no'>('yes')
+  const [touched, setTouched] = useState(false)
 
   return (
     <div className="flex shrink-0 items-center gap-6 lg:gap-10">
@@ -56,20 +64,24 @@ function ConsentChoice({ name }: { name: string }) {
           ['no', 'ไม่ยอมรับ'],
         ] as const
       ).map(([key, label]) => (
-        <label key={key} className="flex cursor-pointer items-center gap-3">
+        <label key={key} className="mm-press flex cursor-pointer items-center gap-3">
           <input
             type="radio"
             name={name}
             checked={value === key}
-            onChange={() => setValue(key)}
+            onChange={() => {
+              setValue(key)
+              setTouched(true)
+            }}
             className="sr-only"
           />
+          {/* the box used to swap fill for outline in one frame, under a tick taking 260ms */}
           <span
-            className={`flex size-6 items-center justify-center rounded-[6px] p-1 ${
+            className={`flex size-6 items-center justify-center rounded-[6px] p-1 transition-colors ${
               value === key ? 'bg-brand-red' : 'border border-[#dcdcdc]'
             }`}
           >
-            {value === key && <img src={CHECK} alt="" aria-hidden className="size-4" />}
+            {value === key && <CheckMark className="size-4 text-white" drawn={touched} />}
           </span>
           <span className="text-lg leading-[1.4] lg:text-xl">{label}</span>
         </label>
@@ -78,20 +90,36 @@ function ConsentChoice({ name }: { name: string }) {
   )
 }
 
+/** The row that opened the sheet, so the sheet can grow out of it and shrink back into it. */
+type OpenDoc = { title: string; x: number; y: number }
+
 export default function TermsStep() {
-  const [openDoc, setOpenDoc] = useState<string | null>(null)
+  const [openDoc, setOpenDoc] = useState<OpenDoc | null>(null)
   const [accepted, setAccepted] = useState<string[]>([])
 
   return (
     <WizardShell
       step={5}
       withTomatoes={false}
-      blurBehindContent
+      /* the page behind the sheet drops back a hair while it is open */
+      receded={openDoc !== null}
       actions={
         <>
           <BackButton to="/register/entrant/2" />
           <SubmitButton to="/register/success" label="ลงทะเบียนเข้าแข่งขัน" />
         </>
+      }
+      /* the scrim is `fixed inset-0`, so it has to sit outside the view-transition body */
+      overlay={
+        <PolicyModal
+          document={REQUIRED_DOCUMENTS.find((d) => d.title === openDoc?.title)?.document ?? null}
+          origin={openDoc}
+          onDecline={() => setOpenDoc(null)}
+          onAccept={() => {
+            if (openDoc) setAccepted((prev) => [...new Set([...prev, openDoc.title])])
+            setOpenDoc(null)
+          }}
+        />
       }
     >
       <div className="flex w-full flex-col items-center justify-center gap-6">
@@ -104,14 +132,27 @@ export default function TermsStep() {
                 <Row key={doc.title} {...doc} padding="p-3">
                   <button
                     type="button"
-                    onClick={() => setOpenDoc(doc.title)}
-                    className={`flex shrink-0 items-center justify-center gap-2 rounded-[12px] px-6 py-3 text-lg leading-[1.4] transition-colors lg:text-xl ${
+                    /* the button's own centre, so the sheet grows from the control the
+                       user actually pressed rather than from the middle of the screen */
+                    onClick={(e) => {
+                      const box = e.currentTarget.getBoundingClientRect()
+                      setOpenDoc({
+                        title: doc.title,
+                        x: box.left + box.width / 2,
+                        y: box.top + box.height / 2,
+                      })
+                    }}
+                    /* `mm-press` matters here more than anywhere: this is the element the
+                       policy sheet measures `--auth-origin-x/y` from, so the sheet grows out
+                       of exactly the control the press has to be felt in. */
+                    className={`mm-press flex shrink-0 items-center justify-center gap-2 rounded-[12px] px-6 py-3 text-lg leading-[1.4] transition-colors lg:text-xl ${
                       isAccepted
                         ? 'bg-brand-red text-white'
                         : 'bg-brand-red/10 text-brand-red hover:bg-brand-red/20'
                     }`}
                   >
-                    {isAccepted && <img src={CHECK} alt="" aria-hidden className="size-4" />}
+                    {/* accepting a policy in the sheet is a decision, so this one does draw */}
+                    {isAccepted && <CheckMark drawn />}
                     {isAccepted ? 'ยอมรับแล้ว' : 'อ่านและยอมรับ'}
                   </button>
                 </Row>
@@ -131,15 +172,6 @@ export default function TermsStep() {
           </div>
         </section>
       </div>
-
-      <PolicyModal
-        document={REQUIRED_DOCUMENTS.find((d) => d.title === openDoc)?.document ?? null}
-        onDecline={() => setOpenDoc(null)}
-        onAccept={() => {
-          if (openDoc) setAccepted((prev) => [...new Set([...prev, openDoc])])
-          setOpenDoc(null)
-        }}
-      />
     </WizardShell>
   )
 }

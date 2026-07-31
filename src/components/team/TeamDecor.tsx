@@ -49,10 +49,18 @@ export default function TeamDecor() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute inset-0 z-0 hidden overflow-hidden lg:block"
+      className="team-decor pointer-events-none absolute inset-0 z-0 overflow-hidden"
     >
-      {/* Figma authors these against a 1440 canvas, so the stage keeps that width and centres */}
-      <div className="decor-canvas absolute top-0 h-[1024px]">
+      {/*
+       * Figma authors these against a 1440 canvas, so the stage keeps that width and centres.
+       * It used to be gated `hidden lg:block`, which left /my-team a plain white page on every
+       * phone and tablet while the desktop had a pasta band and a tomato cluster. The stage is
+       * a self-contained band pinned to the top of the page rather than a set of props
+       * registered against section positions, so unlike the marketing canvases it CAN simply
+       * be scaled down — `.team-decor` in index.css does that from `transform-origin: top
+       * center`, exactly as `.hof-band` does for the hall-of-fame closing band.
+       */}
+      <div className="team-decor-stage absolute top-0 left-1/2 h-[1024px] w-[1440px]">
         <div className="absolute top-0 left-0 h-[509px] w-[1440px] overflow-hidden">
           {PASTAS.map(([w, h, left, top, rotate, iw, ih], i) => (
             <div
@@ -60,7 +68,7 @@ export default function TeamDecor() {
               className="absolute flex items-center justify-center"
               style={{ width: w, height: h, left, top }}
             >
-              <div className="decor-art flex-none" style={{ transform: `rotate(${rotate}deg)` }}>
+              <div className="flex-none" style={{ transform: `rotate(${rotate}deg)` }}>
                 <div className="relative overflow-hidden" style={{ width: iw, height: ih }}>
                   <img
                     src={PASTA}
@@ -83,7 +91,7 @@ export default function TeamDecor() {
                   style={{ left, top, width: box, height: box }}
                 >
                   <div
-                    className="decor-art flex-none"
+                    className="flex-none"
                     style={{ transform: `scaleY(-1) rotate(${rotate}deg)` }}
                   >
                     <div className="relative" style={{ width: img, height: img }}>

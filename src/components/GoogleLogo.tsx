@@ -9,7 +9,13 @@ export default function GoogleLogo({ className = 'size-6' }: { className?: strin
       <img
         src="/assets/figma/1f3d8526a6539e313f6597ff6b470305b04cd69c.png"
         alt=""
-        className="absolute top-0 right-[2.08%] left-0 aspect-[47/48] max-w-none"
+        /*
+         * `w-[97.92%]` rather than a `right` inset: an <img> is a replaced element, so with
+         * `width: auto` the browser uses the file's intrinsic 47px and drops the `right`
+         * constraint as over-constrained — the mark rendered at 47px inside a 24px box and
+         * spilled over the button's label.
+         */
+        className="absolute top-0 left-0 aspect-[47/48] w-[97.92%] max-w-none"
       />
       <img
         src="/assets/figma/d800774dad196dfe605892e52a44141bb8866ed6.svg"

@@ -11,18 +11,24 @@ export default function CodernSection() {
   const card = useReveal()
 
   return (
-    <section id="codern" className="relative px-4 py-20 lg:px-[120px] lg:pt-[10px] lg:pb-[114.3px]">
+    <section id="codern" className="shell sec-codern relative">
       {/*
        * Decoration / Circle (708:740): a 20%-opacity #D79A4E blob under a 400px Gaussian
        * blur, turned 90° and flipped. The export already contains the blur, which is why
        * the bitmap is 800px larger than its box on every side.
        */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        {/*
+         * `decor-fit decor-stage` rather than `hidden lg:block`: the wash used to vanish below
+         * lg, which was part of why the phone page looked bare. The stage scales about its own
+         * top-left and the anchor is scaled by the same factor, so the blob keeps its position
+         * relative to the section at every width. See `.decor-fit` in pasta-motion.css.
+         */}
         <div
-          className="absolute hidden lg:block"
+          className="decor-fit decor-stage absolute origin-top-left"
           style={{
-            left: 611 + 1125 / 2 - 1155 / 2,
-            top: 10 + 1155 / 2 - 1125 / 2,
+            left: 'calc(596px * var(--decor-fit))',
+            top: 'calc(25px * var(--decor-fit))',
             width: 1155,
             height: 1125,
             transform: 'rotate(90deg) scaleY(-1)',
@@ -47,21 +53,27 @@ export default function CodernSection() {
             alt="หน้าจอแพลตฟอร์ม Codern"
             className="aspect-[1954/1154] w-full rounded-t-[20px] object-cover"
           />
-          {/* the screenshot's bottom 160 fades out under a progressive blur */}
+          {/*
+           * The screenshot's bottom fades out under a progressive blur. Figma's 160 is
+           * against a 709-tall image in the 1200 column — 22.6% of it. As a hard 160px the
+           * band stayed put while the image shrank with the column, so at 390 it covered
+           * 76% of a 211-tall screenshot and the whole thing rendered as a black smear.
+           * The fraction is the invariant, not the pixel count.
+           */}
           <ScrollEdgeEffect
             tone="dark"
             flip
             maskAlpha={0.9}
-            className="absolute inset-x-0 bottom-0 h-[160px]"
+            className="absolute inset-x-0 bottom-0 h-[22.6%]"
           />
         </div>
 
-        <div className="flex w-full flex-col gap-5 p-6 lg:gap-5 lg:p-10">
-          <p className="text-lg leading-[1.5] font-medium text-brand-yellow lg:text-2xl">02</p>
+        <div className="flex w-full flex-col gap-5 p-[calc(24px_+_16*var(--fl))]">
+          <p className="fl-eyebrow leading-[1.5] font-medium text-brand-yellow">02</p>
           <div className="flex flex-col gap-1">
-            <h2 className="text-3xl leading-[1.4] font-semibold lg:text-5xl">แพลตฟอร์ม Codern</h2>
+            <h2 className="fl-section leading-[1.4] font-semibold">แพลตฟอร์ม Codern</h2>
             {/* one blank 36px line between the paragraphs, as Figma sets them */}
-            <div className="flex flex-col gap-6 text-base leading-[1.5] font-light lg:gap-9 lg:text-2xl">
+            <div className="fl-lead flex flex-col gap-[calc(24px_+_12*var(--fl))] leading-[1.5] font-light">
               {CODERN_PARAGRAPHS.map((p) => (
                 <p key={p}>{p}</p>
               ))}

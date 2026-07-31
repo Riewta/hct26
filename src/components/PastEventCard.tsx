@@ -1,13 +1,26 @@
 import Mark2024 from './Mark2024'
 import ScrollEdgeEffect from './ScrollEdgeEffect'
+import { useReveal } from '../hooks/useReveal'
 import type { PastEvent } from '../pastEventsData'
 
 export default function PastEventCard({ event }: { event: PastEvent }) {
   const { photoCrop, logo } = event
 
+  /*
+   * Each card observes itself. The three of them used to share one `reveal-group` on the
+   * column in pages/PastEvents.tsx, and at 800 tall apiece that meant cards two and three
+   * were told to animate while they were a screen and a half below the fold — measured at
+   * 1.39 and 2.33 of the viewport at 1440. There is no stagger to keep: nothing this tall
+   * is ever on screen with its neighbour.
+   */
+  const reveal = useReveal<HTMLElement>()
+
   return (
     // Figma: every card is a fixed 1200x800 tile, 40 of padding, 73 between the two columns
-    <article className="relative flex flex-col gap-8 overflow-hidden rounded-[40px] p-6 md:flex-row md:items-start lg:h-[800px] lg:gap-[73px] lg:p-10">
+    <article
+      ref={reveal.ref}
+      className={`relative flex flex-col gap-8 overflow-hidden rounded-[40px] p-6 md:flex-row md:items-start lg:h-[800px] lg:gap-[73px] lg:p-10 ${reveal.cls}`}
+    >
       {photoCrop ? (
         // Figma frames the 2025 shot wider than the card and slides it left
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -45,7 +58,7 @@ export default function PastEventCard({ event }: { event: PastEvent }) {
       <ScrollEdgeEffect
         tone="dark"
         flip
-        blur={event.edgeBlur}
+        plateBlur={event.edgeBlur}
         className="absolute inset-x-0 bottom-0 h-1/2 lg:h-[400px]"
       />
 
@@ -79,19 +92,22 @@ export default function PastEventCard({ event }: { event: PastEvent }) {
       </div>
 
       <div className="relative flex min-w-0 flex-1 flex-col gap-8 text-white lg:gap-[73px]">
+        {/* These four were the last hard `text-a lg:text-b` pairs on the marketing pages —
+            24/18 below lg and 30/24 above it, i.e. two sizes and a jump at 1024. They are
+            the card-heading and lead ranks of the shared ladder. */}
         <header className="flex flex-col gap-4 lg:gap-6">
-          <h3 className="text-2xl leading-[1.4] font-medium lg:text-3xl">{event.title}</h3>
-          <p className="text-lg leading-[1.5] font-light lg:text-2xl">{event.subtitle}</p>
+          <h3 className="fl-title leading-[1.4] font-medium">{event.title}</h3>
+          <p className="fl-lead leading-[1.5] font-light">{event.subtitle}</p>
         </header>
 
         <dl className="flex flex-col gap-6 lg:gap-8">
           {event.awards.map((award) => (
             <div key={award.label} className="flex flex-col gap-2 lg:gap-4">
-              <dt className="text-2xl leading-[1.4] font-medium lg:text-3xl lg:whitespace-nowrap">
+              <dt className="fl-title leading-[1.4] font-medium lg:whitespace-nowrap">
                 {award.label}
               </dt>
               {award.winners.map((winner) => (
-                <dd key={winner} className="text-lg leading-[1.5] font-light lg:text-2xl">
+                <dd key={winner} className="fl-lead leading-[1.5] font-light">
                   {winner}
                 </dd>
               ))}

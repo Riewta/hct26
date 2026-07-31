@@ -1,5 +1,4 @@
 import SectionHeader from './SectionHeader'
-import HomeDecor, { STEPS_DECOR, STEPS_OVERLAY } from './HomeDecor'
 import { DOCUMENT_GROUPS, STEP_CARDS } from '../data'
 import { useReveal } from '../hooks/useReveal'
 
@@ -62,15 +61,15 @@ const ILLUSTRATIONS = [
 ]
 
 /** Figma gives these cards a 20px shadow — softer than the 40px `shadow-soft` elsewhere. */
-const CARD = 'rounded-3xl bg-white p-6 shadow-soft'
+const CARD = 'rounded-3xl bg-white p-[calc(20px_+_4*var(--fl))] shadow-soft'
 
 const [ENTRANT_DOCS, ADVISOR_DOCS] = DOCUMENT_GROUPS
 
 function DocGroup({ heading, items }: (typeof DOCUMENT_GROUPS)[number]) {
   return (
     <div className="flex flex-col gap-4">
-      <h4 className="text-center text-xl leading-[1.5] font-medium lg:text-[22px]">{heading}</h4>
-      <ul className="ms-[30px] flex list-disc flex-col text-lg leading-[1.5] font-light lg:text-xl">
+      <h4 className="fl-title-sm text-center leading-[1.5] font-medium">{heading}</h4>
+      <ul className="fl-body ms-[30px] flex list-disc flex-col leading-[1.5] font-light">
         {items.map((item) => (
           <li key={item}>{item}</li>
         ))}
@@ -79,40 +78,63 @@ function DocGroup({ heading, items }: (typeof DOCUMENT_GROUPS)[number]) {
   )
 }
 
+/**
+ * One step card, revealing itself.
+ *
+ * D13 — the row used to be a `reveal-group`, and a group staggers its DIRECT children. The
+ * grid's two children are the left column (which holds two cards) and the right article, so
+ * the ladder read as two arrivals for three cards and the two left-hand cards came in as one
+ * block. D5 applies on top of that: at 390 the second child measured 1.70 of the viewport at
+ * the frame it was told to animate, a screen below the fold.
+ *
+ * Three reveals, one per card, with the ladder carried inline as `--reveal-delay` — spent
+ * only on the reveal's opacity and transform, never as a `transition-delay` longhand that
+ * would also postpone anything else the card animates (index.css).
+ */
+function StepCard({ card, i }: { card: (typeof STEP_CARDS)[number]; i: number }) {
+  const reveal = useReveal<HTMLElement>()
+
+  return (
+    <article
+      ref={reveal.ref}
+      style={{ '--reveal-delay': `${i * 70}ms` } as React.CSSProperties}
+      className={`flex flex-col gap-[calc(32px_+_28*var(--fl))] ${CARD} ${reveal.cls}`}
+    >
+      {ILLUSTRATIONS[i]}
+      <div className="flex flex-col items-center gap-4 text-center">
+        <h3 className="fl-title leading-[1.4] font-semibold">{card.title}</h3>
+        <p className="fl-body leading-[1.5] font-light">{card.body}</p>
+      </div>
+    </article>
+  )
+}
+
 export default function Steps() {
   const head = useReveal()
-  const body = useReveal({ group: true })
+  const docs = useReveal<HTMLElement>()
 
   return (
     // Figma: the header sits flush at the section top — the run-up above it belongs to
     // the calendar's tail. 109 of tail here carries the row into the red prize band.
-    <section id="steps" className="relative px-4 pt-20 pb-24 lg:px-15 lg:pt-0 lg:pb-[109px]">
-      {/* the wash belongs under every other layer — see Calendar */}
-      <HomeDecor nodes={STEPS_DECOR} variant="wash" className="-z-10" />
-
+    <section id="steps" className="shell sec-steps relative">
       <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col gap-10">
         <div ref={head.ref} className={head.cls}>
           <SectionHeader number="02" title="ขั้นตอนสมัครเข้าแข่งขัน" />
         </div>
 
         {/* Figma splits the row 588 / 588 inside the 1200 column, 936 tall */}
-        <div
-          ref={body.ref}
-          className={`grid items-stretch gap-6 md:grid-cols-2 lg:min-h-[936px] ${body.cls}`}
-        >
+        <div className="grid items-stretch gap-6 md:grid-cols-2 lg:min-h-[936px]">
           <div className="flex min-w-0 flex-col justify-center gap-6">
             {STEP_CARDS.map((card, i) => (
-              <article key={card.title} className={`flex flex-col gap-8 lg:gap-15 ${CARD}`}>
-                {ILLUSTRATIONS[i]}
-                <div className="flex flex-col items-center gap-4 text-center">
-                  <h3 className="text-2xl leading-[1.4] font-semibold lg:text-3xl">{card.title}</h3>
-                  <p className="text-lg leading-[1.5] font-light lg:text-xl">{card.body}</p>
-                </div>
-              </article>
+              <StepCard key={card.title} card={card} i={i} />
             ))}
           </div>
 
-          <article className={`flex min-w-0 flex-col justify-between gap-8 lg:gap-15 ${CARD}`}>
+          <article
+            ref={docs.ref}
+            style={{ '--reveal-delay': '140ms' } as React.CSSProperties}
+            className={`flex min-w-0 flex-col justify-between gap-[calc(32px_+_28*var(--fl))] ${CARD} ${docs.cls}`}
+          >
             <div className="relative mx-auto aspect-[540/290] w-full max-w-[540px]">
               <img
                 src={documentsPhoto}
@@ -125,7 +147,7 @@ export default function Steps() {
             {/* the entrant list belongs to the heading — only the advisor block is 24 away */}
             <div className="flex flex-col gap-6">
               <div className="flex flex-col gap-4">
-                <h3 className="text-center text-2xl leading-[1.4] font-semibold lg:text-3xl">
+                <h3 className="fl-title text-center leading-[1.4] font-semibold">
                   การเตรียมเอกสาร
                 </h3>
                 <DocGroup {...ENTRANT_DOCS} />
@@ -135,9 +157,6 @@ export default function Steps() {
           </article>
         </div>
       </div>
-
-      {/* Figma stacks these over the cards, not behind them */}
-      <HomeDecor nodes={STEPS_OVERLAY} className="z-20" />
     </section>
   )
 }

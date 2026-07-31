@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom'
-import HomeDecor, { HERO_DECOR } from './HomeDecor'
+import { HeroMobileDecor } from './HomeBackground'
+import LiquidButton from './LiquidButton'
 import { HERO_LINES } from '../data'
 import { useReveal } from '../hooks/useReveal'
 
@@ -66,18 +66,17 @@ export default function Hero() {
   return (
     // Figma runs the pasta past every edge of the masthead, so this section must not clip;
     // the 379 tail below the CTA is the run-up to the calendar section.
-    // the nav's 160px blur band is a fixed height, so the masthead keeps Figma's 183 top
-    // offset at every width — dropping to a smaller padding tucks the wordmark under it
-    <section id="hero" className="relative px-4 pt-[183px] pb-40 lg:px-15 lg:pb-[379px]">
-      <HomeDecor nodes={HERO_DECOR} className="z-0" />
+    // The two-step lg: sizes are gone: `hero-*` in styles/liquid.css interpolates the
+    // padding, type and CTA between a 375 floor and the exact Figma values at 1440.
+    <section id="hero" className="hero-pad relative">
+      {/* Narrow viewports only — the 1440 canvas is hidden there. See HomeBackground. */}
+      <HeroMobileDecor />
 
       <div
         ref={content.ref}
         className={`relative z-10 mx-auto flex w-full max-w-[1200px] flex-col items-center text-center ${content.cls}`}
       >
-        {/* Figma's masthead is 810.508 wide on the 1440 artboard; the page zoom carries the
-            ratio, so this only has to hold the px. Phones fall back to a readable cap. */}
-        <div className="relative aspect-[810.508/421] w-full max-w-[420px] sm:max-w-[810.508px]">
+        <div className="relative aspect-[810.508/421] w-full max-w-[810.508px]">
           {NUMERALS.map((numeral, i) => (
             <Numeral key={i} {...numeral} />
           ))}
@@ -97,7 +96,14 @@ export default function Hero() {
           </div>
         </div>
 
-        <p className="mt-[42px] w-full text-base leading-[1.5] font-light sm:max-w-[954px] lg:text-2xl">
+        {/*
+         * The margin is `hero-lead`'s (28 → 42), but the size is the shared ladder's `fl-lead`
+         * rather than `hero-lead`'s own 16 → 24: at 1440 a 24px hero paragraph was a step
+         * above the registration screens' 20px body, which is the comparison the type scale
+         * is now held to. Written out here rather than changed in liquid.css, which belongs
+         * to the liquid-button track.
+         */}
+        <p className="fl-lead mt-[calc(28px_+_14*var(--fl))] w-full max-w-[954px] leading-[1.5] font-light">
           {HERO_LINES.map((line) => (
             <span key={line} className="block">
               {line}
@@ -105,13 +111,22 @@ export default function Hero() {
           ))}
         </p>
 
-        <Link
+        {/* The one control carrying the liquid behaviour so far: it deforms under the
+            pointer, can be dragged and springs home. See LiquidButton for the model.
+            `mm-press` is deliberately absent — the press feedback is the spring's now. */}
+        {/* The one link out of the marketing pages that should not be a cut: the sign-in
+            screen assembles itself on arrival, and it should arrive rather than replace. */}
+        <LiquidButton
           to="/signin"
-          className="group mt-[38px] flex items-center gap-3 rounded-[100px] bg-brand-red py-4 pr-4 pl-6 text-base leading-[1.4] font-bold text-white transition-opacity hover:opacity-90 sm:gap-5 sm:pr-6 sm:pl-10 sm:text-lg lg:text-2xl"
+          viewTransition
+          className="hero-cta font-bold text-white"
+          fillClassName="bg-brand-red"
         >
           ลงทะเบียนเข้าร่วมการแข่งขัน
-          {/* the glyph sits inside a 34px cell — Figma insets it rather than scaling it */}
-          <span className="relative block size-[34px] shrink-0 overflow-hidden transition-transform group-hover:translate-x-1 group-hover:-translate-y-1">
+          {/* the glyph sits inside a 34px cell at 1440 — Figma insets it rather than
+              scaling it, so the inset stays a percentage of whatever the cell becomes. The
+              lean on hover is gated on a fine pointer, since touch fires :hover on tap. */}
+          <span className="hero-cta-icon mm-arrow-shift relative block shrink-0 overflow-hidden">
             <img
               src={arrowUpRight}
               alt=""
@@ -119,7 +134,7 @@ export default function Hero() {
               className="absolute inset-[20.81%_20.8%_22.32%_22.32%] max-w-none"
             />
           </span>
-        </Link>
+        </LiquidButton>
       </div>
     </section>
   )
