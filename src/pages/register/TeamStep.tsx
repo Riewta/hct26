@@ -6,7 +6,8 @@ import {
   SectionTitle,
   SelectField,
   TextField,
-  useDropTarget,
+  useFieldGroup,
+  useFileSlot,
 } from '../../components/form/Field'
 
 const F = '/assets/figma/'
@@ -41,9 +42,14 @@ function Avatar({ crop, src }: { crop: boolean; src: string }) {
   )
 }
 
+/* the two text controls of this section, so "ล้าง" has something to put back */
+const EMPTY = { name: '', school: '' }
+
 /** Figma 708:1255 — the shortest step, which is why the shell's card floor is 832. */
 export default function TeamStep() {
-  const photo = useDropTarget()
+  /* the caption says จำกัดขนาดไม่เกิน 5 MB, so 5 MB is what the box enforces */
+  const photo = useFileSlot({ kind: 'image', maxMB: 5 })
+  const { bind, clear } = useFieldGroup(EMPTY)
 
   /*
    * Team size is tracked here only so the choice can be *confirmed*: the box used to swap its
@@ -58,14 +64,35 @@ export default function TeamStep() {
   return (
     <WizardShell step={1} actions={<NextButton to="/register/advisor" />}>
       <section className="flex w-full flex-col items-center justify-center gap-4">
-        <SectionTitle title="ข้อมูลทีม" onClear={() => {}} />
+        {/*
+         * Clearing is scoped to this section, which is the whole section: the two text
+         * controls, the size choice *and* its `touched` flag — so the tick is static again if
+         * the same size is re-picked, exactly as on arrival — and the photo, whose object URL
+         * `slot.clear()` revokes.
+         */}
+        <SectionTitle
+          title="ข้อมูลทีม"
+          onClear={() => {
+            clear()
+            setSize(null)
+            setTouched(false)
+            photo.clear()
+          }}
+        />
 
         <div className="flex w-full flex-col items-start gap-8 md:flex-row">
           <div className="flex flex-col items-center justify-center gap-3">
             <label
-              {...photo}
-              className="auth-drop mm-press flex size-50 cursor-pointer flex-col items-center justify-center gap-2.5 rounded-[20px] border border-dashed border-[#dcdcdc] hover:border-brand-red"
+              {...photo.drop}
+              className="auth-drop mm-press relative flex size-50 cursor-pointer flex-col items-center justify-center gap-2.5 overflow-hidden rounded-[20px] border border-dashed border-[#dcdcdc] hover:border-brand-red"
             >
+              {/*
+               * A chosen profile photo fills its own frame — a name alone would make the one
+               * box on the page that *is* a picture the only one that never shows it. The
+               * thumbnail is absolute so it cannot stretch the 200 square, and the placeholder
+               * stays mounted underneath it rather than being swapped out, so nothing about
+               * the box's size or the dashed border depends on whether a file is held.
+               */}
               <img
                 src={`${F}18691121244d1cc30f2fff4bf73c50850cbef49f.svg`}
                 alt=""
@@ -73,18 +100,44 @@ export default function TeamStep() {
                 className="size-6"
               />
               <span className="text-lg leading-[normal]">รูปโปรไฟล์ทีม</span>
-              <input type="file" accept="image/*" className="hidden" />
+              {photo.preview && (
+                <img
+                  src={photo.preview}
+                  alt=""
+                  aria-hidden
+                  className="absolute inset-0 size-full object-cover"
+                />
+              )}
+              <input {...photo.inputProps} className="hidden" />
             </label>
-            <p className="text-base leading-[normal] text-gray-1">จำกัดขนาดไม่เกิน 5 MB</p>
+            {/*
+             * One line under the box, three states: the size rule, then the name of the file
+             * held, then the reason one was refused. It is width-capped at the box and
+             * truncates, because a 60-character file name here would widen the column and
+             * make the page pannable sideways on a phone.
+             */}
+            <p
+              aria-live="polite"
+              className={`w-50 truncate text-center text-base leading-[normal] ${photo.error ? 'text-[#ea4335]' : 'text-gray-1'}`}
+            >
+              {photo.error ?? photo.file?.name ?? 'จำกัดขนาดไม่เกิน 5 MB'}
+            </p>
           </div>
 
           <div className="flex flex-1 flex-col items-start gap-8">
-            <TextField label="ชื่อทีม" required placeholder="มะลิ" className="w-full" />
+            <TextField
+              label="ชื่อทีม"
+              required
+              placeholder="มะลิ"
+              className="w-full"
+              {...bind('name')}
+            />
             <SelectField
               label="สถานศึกษา"
               required
               placeholder="เลือกสถานศึกษา"
               className="w-full"
+              {...bind('school')}
             />
 
             <fieldset className="flex w-full flex-col items-start gap-2">

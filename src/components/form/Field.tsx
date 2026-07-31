@@ -1,4 +1,11 @@
-import { useState, type DragEvent, type ReactNode } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type DragEvent,
+  type ReactNode,
+} from 'react'
 
 /**
  * Figma's field primitives (708:1311 and its siblings). Every control is a rounded-12
@@ -58,7 +65,7 @@ export function CheckMark({
  * reads; `dragenter`/`dragleave` fire per descendant, so the counter is what stops the state
  * flickering as the pointer crosses the icon and the caption inside the box.
  */
-export function useDropTarget() {
+export function useDropTarget(onFile?: (file: File) => void) {
   const [depth, setDepth] = useState(0)
 
   return {
@@ -72,13 +79,119 @@ export function useDropTarget() {
     /*
      * `preventDefault` because the browser's own default for a file dropped anywhere on the
      * page is to *navigate to it*, which would throw away a half-filled registration. The
-     * file itself is not handed to the `<input>` — there is no upload plumbing in this flow
-     * yet — so a drop currently only clears the highlight.
+     * highlight is cleared unconditionally — a drop that is refused for size or type still
+     * has to stop looking like it is mid-drag — and only then is the first file handed on.
+     * One file: every box in the design is a single slot, and `files[1..]` would vanish
+     * silently, which is worse than never taking it.
      */
     onDrop: (e: DragEvent) => {
       e.preventDefault()
       setDepth(0)
+      const file = e.dataTransfer?.files?.[0]
+      if (file) onFile?.(file)
     },
+  }
+}
+
+/**
+ * What a drop target and its `<input type="file">` share: the one file the slot holds, the
+ * reason a file was refused, and a preview URL for the images.
+ *
+ * There is no backend in this project, so this is deliberately local state and nothing else —
+ * no request, no progress, no id. The `<input>` is reset to '' after every pick so that
+ * choosing the same file again after a refusal still fires `change`, and so the DOM never
+ * disagrees with `file` about what the slot holds.
+ *
+ * `URL.createObjectURL` pins the whole blob in memory until it is revoked, and a registration
+ * has seven of these slots across four steps: the previous URL is revoked on replace and on
+ * clear, and the last one on unmount, via a ref because the cleanup runs once with the mount
+ * closure and would otherwise revoke whatever `preview` was at mount (nothing).
+ */
+const FILE_KINDS = {
+  image: {
+    accept: 'image/*',
+    ok: (f: File) => f.type.startsWith('image/'),
+    refuse: 'รองรับเฉพาะไฟล์รูปภาพ',
+  },
+  pdf: {
+    accept: 'application/pdf',
+    ok: (f: File) => f.type === 'application/pdf',
+    refuse: 'รองรับเฉพาะไฟล์ PDF',
+  },
+}
+
+export function useFileSlot({ kind, maxMB }: { kind: keyof typeof FILE_KINDS; maxMB: number }) {
+  const [file, setFile] = useState<File | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+  const previewRef = useRef<string | null>(null)
+
+  useEffect(
+    () => () => {
+      if (previewRef.current) URL.revokeObjectURL(previewRef.current)
+    },
+    [],
+  )
+
+  const put = (next: string | null) => {
+    if (previewRef.current) URL.revokeObjectURL(previewRef.current)
+    previewRef.current = next
+    setPreview(next)
+  }
+
+  /* a refused file leaves the slot as it was: losing an accepted file to a mis-drop is worse */
+  const take = (next: File | null | undefined) => {
+    if (!next) return
+    if (!FILE_KINDS[kind].ok(next)) return setError(FILE_KINDS[kind].refuse)
+    if (next.size > maxMB * 1024 * 1024) return setError(`ไฟล์นี้มีขนาดเกิน ${maxMB} MB`)
+    put(next.type.startsWith('image/') ? URL.createObjectURL(next) : null)
+    setFile(next)
+    setError(null)
+  }
+
+  /* the drag highlight and the picker are the two ways into the same slot */
+  const drop = useDropTarget(take)
+
+  return {
+    file,
+    error,
+    preview,
+    drop,
+    inputProps: {
+      type: 'file' as const,
+      accept: FILE_KINDS[kind].accept,
+      onChange: (e: ChangeEvent<HTMLInputElement>) => {
+        take(e.target.files?.[0])
+        e.target.value = ''
+      },
+    },
+    clear: () => {
+      put(null)
+      setFile(null)
+      setError(null)
+    },
+  }
+}
+
+/**
+ * The values of one titled section, so its "ล้าง" can empty exactly its own fields and
+ * nothing else. `empty` has to be a module constant: it is both the initial state and what
+ * clearing restores, and a fresh object per render would make `clear` unstable for no reason.
+ *
+ * This is a `useState` record and not a form library on purpose — the flow has no submit, no
+ * validation and no server (see the field-validation note in styles/auth-motion.css), so the
+ * only thing state is needed for is being able to put it back.
+ */
+export function useFieldGroup<T extends Record<string, string>>(empty: T) {
+  const [values, setValues] = useState(empty)
+
+  return {
+    /** spread onto a field: `<TextField label="ชื่อทีม" {...bind('name')} />` */
+    bind: (key: keyof T) => ({
+      value: values[key],
+      onChange: (next: string) => setValues((prev) => ({ ...prev, [key]: next })),
+    }),
+    clear: () => setValues(empty),
   }
 }
 
@@ -93,15 +206,28 @@ export function Label({ children, required }: { children: ReactNode; required?: 
   )
 }
 
+/*
+ * Every control is controlled, and `value`/`onChange` are required rather than optional: the
+ * section headings carry a "ล้าง" that has to be able to empty them, and an uncontrolled field
+ * added later would leave that button looking like it works and doing nothing — which is the
+ * bug this pair exists to make impossible. `useFieldGroup` supplies both in one spread.
+ */
 type BaseProps = {
   label: string
   required?: boolean
   placeholder?: string
   className?: string
+  value: string
+  onChange: (value: string) => void
 }
 
 /** Figma's field group: label over control on an 8 gap. */
-function FieldShell({ label, required, className, children }: BaseProps & { children: ReactNode }) {
+function FieldShell({
+  label,
+  required,
+  className,
+  children,
+}: Omit<BaseProps, 'value' | 'onChange'> & { children: ReactNode }) {
   return (
     <label className={`flex flex-col items-start gap-2 ${className ?? ''}`}>
       <Label required={required}>{label}</Label>
@@ -110,20 +236,32 @@ function FieldShell({ label, required, className, children }: BaseProps & { chil
   )
 }
 
-export function TextField({ label, required, placeholder, className }: BaseProps) {
+export function TextField({ label, required, placeholder, className, value, onChange }: BaseProps) {
   return (
     <FieldShell label={label} required={required} className={className}>
-      <input type="text" placeholder={placeholder} className={BOX} />
+      <input
+        type="text"
+        placeholder={placeholder}
+        className={BOX}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
     </FieldShell>
   )
 }
 
 /** Figma trails the date control with a calendar glyph. */
-export function DateField({ label, required, placeholder, className }: BaseProps) {
+export function DateField({ label, required, placeholder, className, value, onChange }: BaseProps) {
   return (
     <FieldShell label={label} required={required} className={className}>
       <span className="relative w-full">
-        <input type="date" placeholder={placeholder} className={`${BOX} pr-11`} />
+        <input
+          type="date"
+          placeholder={placeholder}
+          className={`${BOX} pr-11`}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
         <img
           src={`${ICON}e2f35dcd983d5c03887288d750b8cab9ac1c240b.svg`}
           alt=""
@@ -136,10 +274,15 @@ export function DateField({ label, required, placeholder, className }: BaseProps
 }
 
 /** The only multi-line control in the design is 100 tall and top-aligned. */
-export function TextArea({ label, required, placeholder, className }: BaseProps) {
+export function TextArea({ label, required, placeholder, className, value, onChange }: BaseProps) {
   return (
     <FieldShell label={label} required={required} className={`w-full ${className ?? ''}`}>
-      <textarea placeholder={placeholder} className={`${BOX} h-[100px] resize-y`} />
+      <textarea
+        placeholder={placeholder}
+        className={`${BOX} h-[100px] resize-y`}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
     </FieldShell>
   )
 }
@@ -150,11 +293,17 @@ export function SelectField({
   placeholder,
   options = [],
   className,
+  value,
+  onChange,
 }: BaseProps & { options?: string[] }) {
   return (
     <FieldShell label={label} required={required} className={className}>
       <span className="relative w-full">
-        <select className={`${BOX} appearance-none bg-white pr-11`} defaultValue="">
+        <select
+          className={`${BOX} appearance-none bg-white pr-11`}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        >
           <option value="" disabled>
             {placeholder}
           </option>
@@ -199,31 +348,61 @@ export function SectionTitle({ title, onClear }: { title: string; onClear?: () =
   )
 }
 
-/** The 500-wide dashed drop target that trails every document requirement. */
+/**
+ * The 500-wide dashed drop target that trails every document requirement.
+ *
+ * `kind` and `maxMB` default to what the hint copy says out loud — PDF, 10 MB — because a box
+ * that accepts what its own caption rules out is the same broken promise as one that accepts
+ * nothing. Pass all three together when a slot wants something else.
+ *
+ * The caption line does double duty: it is the size rule until a file is refused and the reason
+ * afterwards, so a refusal cannot push the 100-tall box or its neighbours around, and a long
+ * file name truncates rather than widening the row (the page must not scroll sideways).
+ */
 export function UploadBox({
   hint = 'จำกัดขนาดเอกสารไม่เกิน 10 MB (PDF เท่านั้น)',
+  kind = 'pdf',
+  maxMB = 10,
 }: {
   hint?: string
+  kind?: 'image' | 'pdf'
+  maxMB?: number
 }) {
   /* six of these per entrant step, and none of them used to answer a drag at all */
-  const drop = useDropTarget()
+  const slot = useFileSlot({ kind, maxMB })
 
   return (
     <div className="flex w-full shrink-0 flex-col items-start gap-3 lg:w-[500px]">
       <label
-        {...drop}
+        {...slot.drop}
         className="auth-drop mm-press flex h-[100px] w-full cursor-pointer flex-col items-center justify-center gap-2.5 rounded-[20px] border border-dashed border-[#dcdcdc] hover:border-brand-red"
       >
-        <img
-          src={`${ICON}1c78acc4a5b86e58e5a95e29c657511e410afedf.svg`}
-          alt=""
-          aria-hidden
-          className="size-6"
-        />
-        <span className="text-base leading-[normal] font-medium">อัปโหลดไฟล์</span>
-        <input type="file" accept="application/pdf" className="hidden" />
+        {slot.preview ? (
+          <img
+            src={slot.preview}
+            alt=""
+            aria-hidden
+            className="size-10 rounded-[8px] object-cover"
+          />
+        ) : (
+          <img
+            src={`${ICON}1c78acc4a5b86e58e5a95e29c657511e410afedf.svg`}
+            alt=""
+            aria-hidden
+            className="size-6"
+          />
+        )}
+        <span className="w-full truncate px-3 text-center text-base leading-[normal] font-medium">
+          {slot.file ? slot.file.name : 'อัปโหลดไฟล์'}
+        </span>
+        <input {...slot.inputProps} className="hidden" />
       </label>
-      <p className="text-base leading-[normal] text-gray-1">{hint}</p>
+      <p
+        aria-live="polite"
+        className={`w-full truncate text-base leading-[normal] ${slot.error ? 'text-[#ea4335]' : 'text-gray-1'}`}
+      >
+        {slot.error ?? hint}
+      </p>
     </div>
   )
 }
