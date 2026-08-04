@@ -98,43 +98,48 @@
 /* ============================================================= 2. Hero fluid scale
    The hero was transcribed from the 1440 Figma frame as hard px with a second hard px
    value behind `lg:`, which gave it exactly two sizes and a jump at 1024. These clamps
-   interpolate linearly between a 375 floor and the Figma value at 1440, and clamp there:
-   above 1440 the 1200 column is fixed, so the design's numbers are the ceiling.
+   interpolate linearly and clamp at both ends: above 1440 the 1200 column is fixed, so the
+   design's numbers are the ceiling.
 
-   Every slope is (v1440 - v375) / 1065 expressed in vw, with the intercept solved so the
-   line passes through both anchors — each one is checked to land on the Figma value to
-   0.01px at exactly 1440px. The Figma number is named in each comment; the 375 floor is
-   the value the mobile pass had already chosen, except where noted. */
+   The low anchor used to be an invented 375 floor, because Figma had no frame under 1440.
+   `1190:558` is that frame now, so the hero's ramps are solved through BOTH real anchors:
 
-/* section padding-inline: 16 (mobile pass) → 60 (Figma px-15) */
+     slope = (v1440 - v402) / 1038 as vw;  intercept = v402 - slope * 402
+
+   Each lands on its Figma value to 0.001px at 402 and at 1440 — so 1440 cannot move (it is
+   an anchor) and the phone is measured rather than chosen. The 402 values are read off the
+   frame as gaps between siblings, since the phone hero is three separate nodes rather than
+   one frame: the lockup `1190:672` starts at y151 and the Calendar `1190:589` starts at
+   y932 against a CTA `1190:670` ending at 641 — so 151 above and 291 below.
+
+   Ramps that are not part of the hero still carry the older 375-floor form; each comment
+   names which anchors it was solved through. */
+
+/* The hero's own box — both anchors real (402 and 1440). */
 .hero-pad {
-  padding-inline: clamp(16px, 4.1315vw + 0.507px, 60px);
-  /* padding-top: 128 (mobile pass) → 183 (Figma) */
-  padding-top: clamp(128px, 5.1643vw + 108.634px, 183px);
-  /* padding-bottom: 160 (mobile pass) → 379 (Figma) — the run-up to the calendar */
-  padding-bottom: clamp(160px, 20.5634vw + 82.887px, 379px);
+  padding-inline: clamp(16px, 4.238921vw - 1.0404624px, 60px); /* 16 → 60 (Figma px-15) */
+  padding-top: clamp(151px, 3.0828516vw + 138.6069364px, 183px); /* 151 → 183 */
+  /* the run-up to §01 — 291 on the phone is CTA bottom 641 → Calendar top 932 */
+  padding-bottom: clamp(291px, 8.477842vw + 256.9190751px, 379px);
 }
 
-/* The lead paragraph. Figma: 24px/1.5 at 1440; the mobile pass used 16px.
-   The 42px gap above it was a single hard value at every width, so it also steps down
-   now — 28px is proportionate to the much smaller masthead at 375. */
-.hero-lead {
-  margin-top: clamp(28px, 1.3146vw + 23.07px, 42px);
-  font-size: clamp(16px, 0.7512vw + 13.183px, 24px);
-  line-height: 1.5;
-}
+/* The CTA, both anchors real. `1190:670` is 305x60: `px-32 py-16` around a 241x28 label at
+   20px/1.4, with **no arrow glyph**. The 1440 control is 40 left / 24 right precisely
+   because it has one, so dropping the glyph below `md` is what makes the padding
+   symmetrical again — the left ramp grows 32 → 40 and the right one *shrinks* 32 → 24.
 
-/* The CTA. Figma at 1440: 24px label, 16px block padding, 40 left / 24 right inline
-   padding, 20px gap to the glyph, 38px above. Left padding grows faster than right
-   because Figma's asymmetry is what centres the label against the glyph cell. */
+   `font-size` carries a `min()` in front of the ramp. Below 402 the line keeps rising while
+   the viewport falls away, and this control's width is its label's: a 320 phone gave a 300px
+   pill inside a 288px column. `4.9751vw` is exactly 20px at 402, so it is continuous there
+   and simply hands the label to the viewport underneath. */
 .hero-cta {
-  margin-top: clamp(26px, 1.1268vw + 21.775px, 38px);
-  font-size: clamp(16px, 0.7512vw + 13.183px, 24px);
+  margin-top: clamp(32px, 0.5780347vw + 29.6763006px, 38px); /* 32 (549→581) → 38 */
+  font-size: min(4.9751244vw, clamp(20px, 0.3853565vw + 18.4508671px, 24px)); /* 20 → 24 */
   line-height: 1.4;
-  padding-block: 16px; /* Figma py-4, and the same on mobile — nothing to interpolate */
-  padding-left: clamp(24px, 1.5023vw + 18.366px, 40px);
-  padding-right: clamp(16px, 0.7512vw + 13.183px, 24px);
-  gap: clamp(12px, 0.7512vw + 9.183px, 20px);
+  padding-block: 16px; /* Figma py-4 on both frames — nothing to interpolate */
+  padding-left: clamp(28px, 0.7707129vw + 28.9017341px, 40px); /* 32 → 40 */
+  padding-right: clamp(24px, 35.0982659px - 0.7707129vw, 32px); /* 32 → 24 */
+  gap: clamp(12px, 0.7512vw + 9.183px, 20px); /* glyph is md+ only, so 1440-anchored */
 }
 
 /* The arrow's cell — Figma insets the glyph inside a 34px box rather than scaling it, so

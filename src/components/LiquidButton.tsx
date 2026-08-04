@@ -101,6 +101,15 @@ type LiquidButtonProps = {
   onClick?: (event: React.MouseEvent) => void
   /** goes on the root: padding, type, text colour — i.e. the Figma spec for the control */
   className?: string
+  /**
+   * Also the root, for the same job as `className` — a caller whose Figma numbers collide
+   * with a stylesheet it does not own (the hero's `.hero-cta` lives in styles/liquid.css)
+   * can state them here instead of reaching for `!important`. Layout only: the component
+   * writes `transform` and `border-radius` on its own layers every frame and reads the
+   * resting radius off the rendered box, so sizing through this is safe and motion is not
+   * expressible here at all.
+   */
+  style?: React.CSSProperties
   /** goes on the decorative fill: the background paint */
   fillClassName?: string
   /**
@@ -117,6 +126,7 @@ export default function LiquidButton({
   type = 'button',
   onClick,
   className = '',
+  style,
   fillClassName = '',
   viewTransition = false,
 }: LiquidButtonProps) {
@@ -401,6 +411,7 @@ export default function LiquidButton({
         to={to}
         viewTransition={viewTransition}
         className={`lq-btn ${className}`}
+        style={style}
         onKeyDown={onKeyDown}
         {...handlers}
       >
@@ -416,6 +427,7 @@ export default function LiquidButton({
       }}
       type={type}
       className={`lq-btn ${className}`}
+      style={style}
       {...handlers}
     >
       {body}

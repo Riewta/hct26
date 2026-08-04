@@ -27,7 +27,18 @@
    - `will-change` sits on the armed state only, which is the whole point of the hint: the
      compositor gets told before the transform starts. Once the animation is running the
      browser promotes it anyway, and twenty permanent composited layers behind a whole
-     page is not a trade worth making. */
+     page is not a trade worth making.
+
+   Three bands share these keyframes, and nothing here needs to know which: the 1440 px
+   canvas, the fluid band that runs from `sm` to `lg`, and — since Figma gave the homepage a
+   real 402-wide frame — the phone band in components/MobileHomeBackground.tsx. Each observes
+   its OWN sentinel (a separate `useFlowPhase`), so no band starts because another scrolled
+   into view, and each is handed its own distances: the phone draws the same twenty tubes at
+   0.48 of their desktop size, so its flight covers 0.48 of the desktop distance and reads as
+   the same throw. The idle amplitudes are deliberately NOT scaled with it — see the note on
+   `nudge` in HomeBackground; the smallest movement that reads as alive is a property of the
+   eye, not of the artwork. Only one band is ever mounted at a width (the others are
+   `display: none`, which suspends their animations), so the twenty layers are never doubled. */
 
 /* ------------------------------------------------- the 1440 canvas, narrowed ----
 
