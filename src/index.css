@@ -95,13 +95,16 @@
      1440 typography sat in a column barely narrower than the viewport — which is
      what made the proportions read as too big and too wide.
 
-     The floor is 20 rather than 16: at 390 the old 16 left the cards butting almost
-     against the bezel, which is part of why the phone render read as a squeezed
-     desktop rather than a phone composition. 1440 is unchanged. */
-  --fl-gutter: calc(20px + 100 * var(--fl));
+     The low anchor is no longer chosen: `1190:558` insets its content by 24 (its sections
+     are 402 wide holding a 354 column), so both ends are Figma's and the ramp is solved
+     through both. The old line gave 22.54 at 402, i.e. a 356.94 column where the frame
+     says 354. 1440 is unchanged — it is an anchor. */
+  --fl-gutter: calc(21.5px + 98.5 * var(--fl));
 
-  /* The nav pill and the footer sit in Figma's wider 1320 column, inset 60. */
-  --fl-gutter-wide: calc(16px + 44 * var(--fl));
+  /* The nav pill and the footer sit in Figma's wider 1320 column, inset 60. Same story:
+     the old `16 + 44` gave 17.1 at 402 where the phone frame insets section content by 24.
+     The nav is a genuine exception at 20 and inlines its own value rather than this token. */
+  --fl-gutter-wide: clamp(24px, 3.4682081vw + 10.0578035px, 60px);
 }
 
 /* The two content shells. The inner column keeps its own `max-w-*`, so the shell
@@ -155,8 +158,10 @@
   font-size: calc(28px + 12 * var(--fl)); /* 28 → 40 */
 }
 
+/* Both anchors are Figma's: `1190:755` is a 28px/1.4 title on the phone frame, 34 at 1440.
+   The old 23 floor was chosen when there was no frame under 1440. */
 @utility fl-section {
-  font-size: calc(23px + 11 * var(--fl)); /* 23 → 34 */
+  font-size: calc(27.844px + 6.156 * var(--fl)); /* 28 @402 → 34 @1440 */
 }
 
 @utility fl-title {
@@ -175,8 +180,13 @@
   font-size: calc(15px + 4 * var(--fl)); /* 15 → 19 */
 }
 
+/* `1190:753` sets the phone marker at 20px/1.5 — LARGER than the phone's body copy, which
+   is the one place the ladder's strict ordering does not hold. That is the designer's call
+   on the phone frame, not a slip: the "01" is a graphic label there, the way the display
+   numerals below sit outside the ladder for the same reason. Above ~700 the ramp descends
+   back under `fl-body` and the ordering resumes. */
 @utility fl-eyebrow {
-  font-size: calc(14px + 3.5 * var(--fl)); /* 14 → 17.5 */
+  font-size: calc(20.065px - 2.565 * var(--fl)); /* 20 @402 → 17.5 @1440 */
 }
 
 @utility fl-caption {
@@ -273,18 +283,27 @@
   padding-bottom: calc(64px - 64 * var(--flv)); /* → 0, the waves butt straight on */
 }
 
+/* The four homepage sections below now have both anchors from Figma. On the phone frame
+   `1190:558` the section top IS the header top — there is no vertical padding above a
+   heading — and the tail is much longer than the mobile pass had guessed: the calendar ends
+   at 1781 and Steps begins at 2253, so 472 of blank page carries the garlic and the cutlery.
+   With the old 96px tail those props landed behind the Steps heading instead of in open
+   air, which is the misalignment both decoration tracks reported. */
+
 @utility sec-calendar {
-  padding-top: calc(80px + 8.5 * var(--flv)); /* → 88.5 */
-  padding-bottom: calc(96px + 355.5 * var(--flv)); /* → 451.5, the garlic/fork field */
+  padding-top: max(0px, calc(-3.84px + 92.34 * var(--flv))); /* 0 → 88.5 */
+  padding-bottom: calc(472.89px - 21.39 * var(--flv)); /* 472 → 451.5, the garlic/fork field */
 }
 
 @utility sec-steps {
   padding-top: calc(80px - 80 * var(--flv)); /* → 0, the run-up is the calendar's tail */
-  padding-bottom: calc(96px + 13 * var(--flv)); /* → 109 */
+  padding-bottom: calc(114.21px - 5.21 * var(--flv)); /* 114 → 109 exactly */
 }
 
 @utility sec-prizes {
-  padding-block: calc(80px + 85.5 * var(--flv)); /* → 165.5 */
+  /* 0 above on the phone (3924 is the header), 165.5 at 1440 */
+  padding-top: max(0px, calc(-7.17px + 172.67 * var(--flv)));
+  padding-bottom: calc(96px + 69.5 * var(--flv)); /* 96 → 165.5 */
 }
 
 @utility sec-scope {

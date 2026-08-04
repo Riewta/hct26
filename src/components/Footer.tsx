@@ -2,6 +2,19 @@ import { Link } from 'react-router-dom'
 import { FOOTER_ABOUT, FOOTER_GROUPS, SOCIAL_LINKS } from '../data'
 import { useReveal } from '../hooks/useReveal'
 
+/**
+ * Two anchors, as everywhere else this round. `1190:831` "Section / Footer" is 402x454 with
+ * its content `1190:832` inset 24 on all four sides; `935:451` has the same card at 60 /
+ * 60 / 100. `shell-wide` and the two old `calc()`s only knew the 1440 end, so the phone card
+ * was padded 17.1 / 40.5 / 64.9. Each line lands on its Figma value to 0.001px at 402 and at
+ * 1440, so the desktop footer is unchanged to the pixel.
+ */
+const FOOTER_PAD: React.CSSProperties = {
+  paddingInline: 'clamp(24px, 3.4682081vw + 10.0578035px, 60px)',
+  paddingTop: 'clamp(24px, 3.4682081vw + 10.0578035px, 60px)',
+  paddingBottom: 'clamp(24px, 7.3217726vw - 5.433526px, 100px)',
+}
+
 export default function Footer() {
   /*
    * G7 — the footer closes all three marketing pages and was the only band on any of them
@@ -22,14 +35,113 @@ export default function Footer() {
   const about = useReveal()
   const links = useReveal()
 
+  /*
+   * The phone footer is its own composition rather than a narrower desktop one — see the
+   * block below — so it needs a trigger of its own. `group` because it is a single centred
+   * column of four rows, which is exactly the ladder `reveal-group` staggers; the desktop
+   * branch stays two independent reveals because its two halves sit side by side.
+   */
+  const phone = useReveal({ group: true })
+
   return (
     /* `relative` so the footer joins the positioned paint step: the page's decoration canvas
        is `-z-10` but a static footer still paints before any positioned box, so any future
        overshoot would land on top of this text instead of behind it.
        `site-footer` names it for the marketing page transition — it is the same element on
        all three pages, so it holds still while the body above it changes. */
-    <footer className="site-footer relative shell-wide rounded-3xl bg-white pt-[calc(40px_+_20*var(--fl))] pb-[calc(64px_+_36*var(--fl))]">
-      <div className="mx-auto flex max-w-[1320px] flex-col gap-8 lg:flex-row lg:justify-between">
+    <footer style={FOOTER_PAD} className="site-footer relative rounded-3xl bg-white">
+      {/*
+       * ===================================================== the phone footer, `1190:831`
+       *
+       * Not a narrower desktop footer — a different one. The 402 frame centres everything
+       * and drops both link columns and the "ติดต่อเรา" heading, leaving four rows: the
+       * identity lockup, the project paragraph, the two social links, the copyright.
+       *
+       * WHAT THIS DROPS, deliberately: the four link groups (หน้าหลัก / คู่มือการแข่งขัน /
+       * หอเกียรติยศ / ติดต่อเรา, nine links). Three of the four headings are the three pages
+       * the hamburger menu already lists, so no *page* becomes unreachable on a phone. Six
+       * of the nine links are in-page fragments (`/#calendar`, `/guide#faq`, …) that a phone
+       * reader gets to by scrolling the page they are already on, and the remaining links are
+       * one tap from a page the menu offers. That is the trade the design makes, and it buys
+       * a 454-tall footer instead of the ~970 the stacked columns cost at 390.
+       *
+       * The identity lockup also re-flows: at 1440 the logo, both university marks and two
+       * hairline rules are one row; at 402 the logo is its own 267x60 row with the two
+       * university marks and a single rule beneath it (`1190:835` → `1190:837`).
+       *
+       * The `md` boundary is the same one the nav and the hero use. Between `md` and `lg` the
+       * desktop branch below still renders its own narrow variant, unchanged.
+       */}
+      <div
+        ref={phone.ref}
+        className={`flex flex-col items-center gap-6 text-center md:hidden ${phone.cls}`}
+      >
+        {/* 1190:834 "Sponsor Logos" — the marks and the paragraph are one row of the outer
+            column, 32 apart from each other where the outer gaps are 24. Nesting them is
+            what puts the paragraph at Figma's y140 rather than 8px high. */}
+        <div className="flex w-full flex-col items-center gap-8">
+          {/* 1190:835 — logo over marks, gap 12, the pair centred as a unit */}
+          <div className="flex flex-col items-center gap-3">
+            <Link to="/" viewTransition className="mm-press">
+              {/* 60 tall on BOTH frames: 1190:836 is 267x60 and the 1440 mark is 60 too, and
+                at 1600x360 the asset resolves 60 → 266.67 wide against Figma's 267. */}
+              <img src="/assets/logo-nav.png" alt="BangMod Hackathon 2026" className="h-[60px]" />
+            </Link>
+
+            {/* 1190:837 — 36-tall marks, 6px either side of a hairline rule */}
+            <div className="flex items-center gap-1.5">
+              <img
+                src="/assets/figma/334492fe4cb116291b1b34c10e03a9aa49cd8960.svg"
+                alt="มหาวิทยาลัยเทคโนโลยีพระจอมเกล้าธนบุรี"
+                className="h-9 w-[158.25px] shrink-0"
+              />
+              <span aria-hidden className="h-9 w-px shrink-0 bg-ink" />
+              {/* the same clipped window as the desktop row — see the note there for why the
+                artwork is sized in percentages of the window rather than by an inset pair.
+                1190:903 makes the window 42x22 instead of 57x28; the percentages are a real
+                ratio, so they crop identically at either size. */}
+              <span className="relative block h-[22px] w-[42px] shrink-0 overflow-hidden">
+                <img
+                  src="/assets/figma/b1f497a79771a763f521a081e6006d3a027a793f.svg"
+                  alt="ภาควิชาวิศวกรรมคอมพิวเตอร์"
+                  className="absolute top-[-30.12%] left-[-7.09%] h-[160.4353%] w-[114.0625%] max-w-none"
+                />
+              </span>
+            </div>
+          </div>
+
+          {/* 1190:911 — 16/1.4 ink over 14/1.5 grey, 8 apart. `fl-18` and `fl-14` already
+            resolve to exactly 16 and 14 at 402 (both are `max()`-floored), so the phone
+            values are the tokens' own narrow ends and nothing has to be restated. */}
+          <div className="flex w-full flex-col gap-2">
+            <p className="fl-18 leading-[1.4]">{FOOTER_ABOUT.title}</p>
+            <p className="fl-14 leading-[1.5] text-gray-1">{FOOTER_ABOUT.body}</p>
+          </div>
+        </div>
+
+        {/* 1190:914 — the two links side by side and centred, 16 apart, with no heading
+            above them. `min-h-11` is not in the design: the rows are 24 tall there, and a
+            24px target on a phone is half of what a finger needs. It grows the row's box
+            only, so the glyph and label still land on Figma's baseline. */}
+        <div className="flex items-center justify-center gap-4">
+          {SOCIAL_LINKS.map((social) => (
+            <a
+              key={social.label}
+              href={social.href}
+              className="mm-link mm-press flex min-h-11 items-center gap-1 fl-18 leading-[1.4] hover:text-brand-red"
+            >
+              <img src={social.icon} alt="" aria-hidden className="mm-icon-pop size-6" />
+              {social.label}
+            </a>
+          ))}
+        </div>
+
+        {/* 1190:925 — 12/1.5 Light grey, centred */}
+        <p className="text-xs leading-[1.5] font-light text-gray-1">{FOOTER_ABOUT.copyright}</p>
+      </div>
+
+      {/* ============================================ `md` and up: the 1440 footer, unchanged */}
+      <div className="mx-auto hidden max-w-[1320px] flex-col gap-8 md:flex lg:flex-row lg:justify-between">
         <div
           ref={about.ref}
           className={`flex max-w-[600px] flex-col justify-between gap-8 ${about.cls}`}

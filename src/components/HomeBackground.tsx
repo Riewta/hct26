@@ -23,166 +23,37 @@
  * See `nodeStyle` for the two-space renderer and `FluidGroup` for the bands.
  */
 
+import MobileHomeBackground from './MobileHomeBackground'
+import type { CSSProperties, ReactNode } from 'react'
 import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-  type ReactNode,
-} from 'react'
+  CANVAS,
+  Node,
+  RIGATONI,
+  TUBE,
+  cheeseChunk,
+  flowVars,
+  fork,
+  garlic,
+  pasta1,
+  pasta24,
+  redBlob,
+  redWave,
+  spoon,
+  useSectionAnchor,
+  useFlowPhase,
+  yellowWave,
+  type DecorNode,
+  type FlowProps,
+  type Space,
+} from './decorKit'
 
-const pasta1 = '/assets/figma/9411a40dfd006a723a0a9654923706988c019803.png'
-const pasta24 = '/assets/figma/dc1a2b1e496026d2ffb6efe6645f8155f8dd73f1.png'
-const garlic = '/assets/figma/789932a40b3a11554f67e156b251aa5348ebcef4.png'
-const cheeseChunk = '/assets/figma/1dd3f1f43fd0ed1c5a00ba203e5893bdc7acd558.png'
-const spoon = '/assets/figma/e3f126eae3b64304ddef1da90bc0d5f13f1a4161.png'
-const fork = '/assets/figma/669d80cf5814c6779007ac79ca0395b2134e2acf.png'
-const redBlob = '/assets/figma/698744474ca70b049053608ab4751a69839434a7.svg'
+/* re-exported because AboutDecor.tsx has always imported the hook from this module */
+export { useSectionAnchor } from './decorKit'
+
 const waveCluster = '/assets/figma/bca04b60dba2c906fd3530e53d512366ad9270c0.svg'
 const creamWave = '/assets/figma/433f3f26ad6f98ea3006669c9135c89114e7516e.svg'
-const yellowWave = '/assets/figma/73268ad299185fd28c6c6d5d19f64f2f35afe370.svg'
-const redWave = '/assets/figma/ea2b8a309e7e0fc3158050a5351b69d87e094972.svg'
 const wash15 = '/assets/figma/872ea85568057dd3fd543654d790878da9b98197.svg'
 const wash10 = '/assets/figma/a915d7877097844540d11c4defd51424f31744fd.svg'
-
-/** The canvas Figma authors against. Every fluid percentage below is a ratio to this. */
-const CANVAS = 1440
-
-type Crop = [w: number, h: number, x: number, y: number]
-
-/** Every tube is one sprite sheet; the crop is the window onto its single piece. */
-const TUBE: Crop = [641.92, 600.87, -143.34, -469.05]
-const RIGATONI: Crop = [1135.56, 683.33, -709.14, -505.81]
-
-export type DecorNode = {
-  /** the *bounding* box of the (possibly rotated) shape, in the parent's space */
-  x: number
-  y: number
-  w: number
-  h: number
-  /** the unrotated art box, centred inside the bounding box; defaults to w/h */
-  aw?: number
-  ah?: number
-  rotate?: number
-  flipX?: boolean
-  flipY?: boolean
-  skewX?: number
-  src?: string
-  /** sprite-sheet window: width, height, x, y as % of the art box */
-  crop?: Crop
-  /** px the exported SVG bleeds past the node on all sides — a Figma layer blur */
-  spread?: number
-  /** a nested Figma frame; children are positioned in this node's space */
-  kids?: DecorNode[]
-}
-
-/*
- * ---------------------------------------------------------------- the two spaces
- *
- * `null` is the px space: a node's numbers are used as they are, against the centred 1440
- * canvas. A `Space` is a fluid band: numbers become percentages of `box`, which is the
- * band's own canvas-unit size, and `dy` is the top of the band's window so a band can start
- * part-way down (or above) the group it draws.
- *
- * The invariant that makes this safe is that a fluid box's *rendered* aspect ratio always
- * equals `box.w / box.h` — the band sets `aspect-ratio` from its window, and every child box
- * is a percentage of a parent that already holds. So a percentage width and a percentage
- * height are the same scale factor, and no shape is ever stretched.
- */
-type Box = { w: number; h: number }
-type Space = { box: Box; dy: number } | null
-
-const pc = (v: number, of: number) => `${((v / of) * 100).toFixed(4)}%`
-
-function nodeStyle(n: DecorNode, space: Space): CSSProperties {
-  if (!space) return { left: n.x, top: n.y, width: n.w, height: n.h }
-  return {
-    left: pc(n.x, space.box.w),
-    top: pc(n.y - space.dy, space.box.h),
-    width: pc(n.w, space.box.w),
-    height: pc(n.h, space.box.h),
-  }
-}
-
-function Node({ n, space = null, flow }: { n: DecorNode; space?: Space; flow?: FlowProps }) {
-  const frame = nodeStyle(n, space)
-
-  if (n.kids) {
-    /* the children's space is this node's own box, with no window offset */
-    const kidSpace: Space = space ? { box: { w: n.w, h: n.h }, dy: 0 } : null
-    return (
-      <div className="absolute" style={frame}>
-        {n.kids.map((kid, i) => (
-          <Node key={i} n={kid} space={kidSpace} />
-        ))}
-      </div>
-    )
-  }
-
-  const aw = n.aw ?? n.w
-  const ah = n.ah ?? n.h
-  // Figma's own order: rotate, then skew, then the mirror flips
-  const transform =
-    [
-      n.rotate ? `rotate(${n.rotate}deg)` : '',
-      n.skewX ? `skewX(${n.skewX}deg)` : '',
-      n.flipX ? 'scaleX(-1)' : '',
-      n.flipY ? 'scaleY(-1)' : '',
-    ]
-      .filter(Boolean)
-      .join(' ') || undefined
-
-  const art: CSSProperties = space
-    ? { width: pc(aw, n.w), height: pc(ah, n.h), transform }
-    : { width: aw, height: ah, transform }
-
-  const bleed: CSSProperties | undefined = n.spread
-    ? space
-      ? {
-          left: pc(-n.spread, aw),
-          top: pc(-n.spread, ah),
-          width: pc(aw + n.spread * 2, aw),
-          height: pc(ah + n.spread * 2, ah),
-        }
-      : {
-          left: -n.spread,
-          top: -n.spread,
-          width: aw + n.spread * 2,
-          height: ah + n.spread * 2,
-        }
-    : undefined
-
-  return (
-    <div
-      className={`absolute flex items-center justify-center ${flow?.className ?? ''}`}
-      style={flow ? { ...frame, ...flow.vars } : frame}
-    >
-      {/* `relative` so a blurred export's bleed is measured from the art box, not the bbox */}
-      <div className="relative shrink-0" style={art}>
-        {n.crop ? (
-          <div className="relative size-full overflow-hidden">
-            <img
-              src={n.src}
-              alt=""
-              className="absolute max-w-none"
-              style={{
-                width: `${n.crop[0]}%`,
-                height: `${n.crop[1]}%`,
-                left: `${n.crop[2]}%`,
-                top: `${n.crop[3]}%`,
-              }}
-            />
-          </div>
-        ) : bleed ? (
-          <img src={n.src} alt="" className="absolute max-w-none" style={bleed} />
-        ) : (
-          <img src={n.src} alt="" className="size-full object-cover" />
-        )}
-      </div>
-    </div>
-  )
-}
 
 /**
  * One Figma group, drawn fluidly. `y0`/`y1` is the window of canvas y the band covers: the
@@ -420,76 +291,12 @@ const WASH: DecorNode[] = [
  * size* at 390 as at 1440 — a phone tube is a quarter the size and travels a quarter as
  * far, which is the only reading under which the motion looks like the same motion.
  */
-type FlowProps = { className: string; vars: CSSProperties }
-
-/** The one thing not derived from the index: which way a piece is pushed as the pile packs. */
-const PILE_X = 1150
-
-function flowVars(i: number, x: number, fluid = false): CSSProperties {
-  const out = x >= PILE_X ? 1 : -1
-  // neighbours orbit opposite ways, so the band breathes rather than drifting as one body
-  const spin = i % 2 ? 1 : -1
-  /*
-   * 48ms, not 95. The band sits above the fold on `/`, so it starts at load alongside the
-   * hero's own cascade — and the hero is settled by ~740ms. At 95ms the twentieth tube had
-   * not even started travelling until 1805ms and the band kept arriving until 4145ms, so
-   * the copy finished, waited, and the wallpaper carried on assembling behind it. Halving
-   * the step puts the last start at 912ms and the last landing at ~3.25s, which lands the
-   * band's centre of mass in the same second as the hero. Every other ladder in this
-   * codebase is 20-70ms; 95 was the outlier.
-   *
-   * `duration` is untouched on purpose: that is the per-tube travel time, and it is what
-   * reads as weight — a tube crossing 500px in less than 1.8s is thrown, not drifting.
-   * Only the gap between neighbours got tighter.
-   */
-  const delay = i * 48
-  const duration = 1800 + ((i * 137) % 5) * 180
-  /** canvas units → the band's own unit */
-  const u = (v: number) => (fluid ? `${((v / CANVAS) * 100).toFixed(4)}vw` : `${v}px`)
-
-  /*
-   * The idle amplitudes are the one thing here that does NOT go through `u`, and the reason
-   * is that the two motions are different kinds of quantity.
-   *
-   * The arrival is a journey: a tube crosses a distance proportional to its own artwork, so
-   * a phone tube — a quarter the size — should fly a quarter as far, and `u` emitting `vw`
-   * inside the fluid band is exactly right.
-   *
-   * The idle is not a journey, it is a perceptual nudge: the smallest movement that reads as
-   * "alive" is a property of the eye, not of the artwork, and it does not shrink with the
-   * viewport. Sent through `u` these figures became 0.347vw..0.847vw, which at 390 is a
-   * 1.4-3.3px peak spread over 17-32 seconds — at or under the threshold of noticing. The
-   * phone was paying for twenty permanent composited animations and getting nothing visible
-   * back, which is the precise complaint this round exists to answer. In px they read on a
-   * phone the way they read on a desktop.
-   *
-   * Rotation needs no equivalent: an angle is already scale-free.
-   */
-  const nudge = (v: number) => `${+v.toFixed(2)}px`
-
-  return {
-    '--pasta-dx': u(-(440 + ((i * 89) % 7) * 55)),
-    '--pasta-dy': u((((i * 53) % 9) - 4) * 16),
-    '--pasta-spin': `${(((i * 71) % 11) - 5) * 4}deg`,
-    '--pasta-scale': `${(0.86 + ((i * 31) % 6) * 0.03).toFixed(3)}`,
-    '--pasta-px': u(out * (7 + ((i * 17) % 3) * 6)),
-    '--pasta-py': u((((i * 41) % 5) - 2) * 6),
-    '--pasta-delay': `${delay}ms`,
-    '--pasta-duration': `${duration}ms`,
-    '--pasta-idle-delay': `${delay + duration}ms`,
-    '--pasta-idle-duration': `${17000 + ((i * 61) % 9) * 1900}ms`,
-    '--pasta-idle-x': nudge(spin * (5 + ((i * 43) % 5) * 1.8)),
-    '--pasta-idle-y': nudge(3 + ((i * 29) % 4) * 1.6),
-    '--pasta-idle-r': `${spin * (1.1 + ((i * 23) % 4) * 0.5)}deg`,
-  } as CSSProperties
-}
-
 /** Keyed by node so the flight belongs to the piece, not to its position in the array. */
 const FLOW_PX = new Map<DecorNode, CSSProperties>(
   RIGATONI_SCATTER.map((n, i) => [n, flowVars(i, n.x)]),
 )
 const FLOW_FLUID = new Map<DecorNode, CSSProperties>(
-  RIGATONI_SCATTER.map((n, i) => [n, flowVars(i, n.x, true)]),
+  RIGATONI_SCATTER.map((n, i) => [n, flowVars(i, n.x, { fluid: true })]),
 )
 
 /*
@@ -503,32 +310,6 @@ const FLOW_FLUID = new Map<DecorNode, CSSProperties>(
  * their own sentinel — the two bands are at different places on the page and neither
  * should start because the other scrolled in.
  */
-function useFlowPhase() {
-  const [phase, setPhase] = useState<'rest' | 'armed' | 'run'>('rest')
-  const band = useRef<HTMLDivElement>(null)
-
-  useLayoutEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    const el = band.current
-    if (!el || !('IntersectionObserver' in window)) return
-    setPhase('armed')
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((e) => e.isIntersecting)) return
-        setPhase('run')
-        io.disconnect()
-      },
-      // the band should be properly on screen, not one pixel of it
-      { rootMargin: '0px 0px -12% 0px' },
-    )
-    io.observe(el)
-    return () => io.disconnect()
-  }, [])
-
-  const flowClass = phase === 'run' ? 'pasta-flow' : phase === 'armed' ? 'pasta-flow-armed' : ''
-  return { band, flowClass }
-}
-
 /*
  * ----------------------------------------------------------- the section anchor
  *
@@ -543,31 +324,6 @@ function useFlowPhase() {
  * Both the section and that wrapper are observed: a section can be moved by something above
  * it growing without changing size itself, and then only the wrapper's own resize fires.
  */
-export function useSectionAnchor(id: string) {
-  const [box, setBox] = useState<{ top: number; height: number } | null>(null)
-
-  useEffect(() => {
-    const el = document.getElementById(id)
-    if (!el) return
-    const read = () => {
-      const parent = el.offsetParent as HTMLElement | null
-      setBox((prev) =>
-        prev?.top === el.offsetTop && prev?.height === el.offsetHeight
-          ? prev
-          : { top: el.offsetTop, height: el.offsetHeight },
-      )
-      return parent
-    }
-    const parent = read()
-    const ro = new ResizeObserver(read)
-    ro.observe(el)
-    if (parent) ro.observe(parent)
-    return () => ro.disconnect()
-  }, [id])
-
-  return box
-}
-
 /**
  * A fluid band placed at the fraction of `section` that Figma places `y` at on the 1440
  * canvas, where `sectionTop`/`sectionHeight` are that section's Figma box. Renders nothing
@@ -629,7 +385,7 @@ export default function HomeBackground() {
        */}
       {prizes && (
         <div
-          className="absolute inset-x-0 bg-brand-red lg:hidden"
+          className="absolute inset-x-0 hidden bg-brand-red min-[431px]:block lg:hidden"
           style={{ top: prizes.top, bottom: 0 }}
         />
       )}
@@ -643,7 +399,7 @@ export default function HomeBackground() {
         nodes={HOME_BOTTOM}
         y0={0}
         y1={HOME_BOTTOM_HEIGHT}
-        className="inset-x-0 bottom-0"
+        className="inset-x-0 bottom-0 hidden min-[431px]:block"
       />
 
       <div className="absolute top-0 left-1/2 h-full w-[1440px] -translate-x-1/2">
@@ -653,7 +409,7 @@ export default function HomeBackground() {
          * heights, so a page y lands nowhere near the content it belongs to, and the same
          * props are drawn instead as the section-anchored bands below.
          */}
-        <div>
+        <div className="hidden min-[431px]:block">
           {WASH.map((n, i) => (
             <Node key={i} n={n} />
           ))}
@@ -682,7 +438,7 @@ export default function HomeBackground() {
        * cutlery its right-edge bleed, both cropped by this canvas rather than by a page-wide
        * scroll area.
        */}
-      <div className="lg:hidden">
+      <div className="hidden min-[431px]:block lg:hidden">
         <SectionBand anchor={calendar} figma={{ y: GARLIC_LEFT.y, ...FIGMA_CALENDAR }}>
           {(top) => (
             <FluidGroup
@@ -706,6 +462,16 @@ export default function HomeBackground() {
           )}
         </SectionBand>
       </div>
+
+      {/*
+       * At 430 and below, none of the above draws: Figma now has a real 402-wide frame for
+       * this page (1190:558) and that frame — not a shrunk 1440 — is the phone's design. It
+       * renders inside this same clip, so its own bleed is cropped here rather than by the
+       * page. From 431 to `lg` the fluid-band reading above still runs, which is what that
+       * range had before and what no Figma frame specifies; see the ceiling note in
+       * MobileHomeBackground.tsx for why the handover is at 430 and not at `sm`.
+       */}
+      <MobileHomeBackground />
     </div>
   )
 }
@@ -736,7 +502,10 @@ export function HeroMobileDecor() {
   const { band, flowClass } = useFlowPhase()
 
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 lg:hidden">
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 -z-10 hidden min-[431px]:block lg:hidden"
+    >
       <FluidGroup
         nodes={TOP_PASTA}
         y0={-470}
